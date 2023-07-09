@@ -10,7 +10,6 @@ const Welcome = (props) => {
             <LinearGradient style={{ flex: 1, paddingHorizontal: 15, paddingVertical: 8 }} colors={['#19D2C1', '#22E3AD']} >
 
                 <View style={{ flex: 0.6, alignItems: 'center', justifyContent: 'center' }}>
-                    {/* <Icons name="music" color="black" size={60} /> */}
                     <Icons name="account-music" color="black" size={60} />
                     <Text style={{ color: 'white', fontSize: 35, fontWeight: 'bold', textAlign: 'center' }}>Get Access to Millions of songs</Text>
                 </View>
