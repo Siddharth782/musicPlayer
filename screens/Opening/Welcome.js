@@ -2,8 +2,11 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
 import React from 'react'
 import LinearGradient from 'react-native-linear-gradient'
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons'
+import { storage } from '../../store/store'
 
 const Welcome = (props) => {
+    console.log(storage.getString('userName'))
+    console.log(storage.getString('UID'))
     return (
         <View style={{ flex: 1 }}>
 
