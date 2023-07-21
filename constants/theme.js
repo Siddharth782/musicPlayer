@@ -54,15 +54,17 @@ export const SIZES = {
     padding: 24,
 
     // font sizes
-    largeTitle: 40,
     h1: 30,
     h2: 22,
     h3: 16,
     h4: 14,
     h5: 12,
-    body1: 30,
-    body2: 22,
-    body3: 16,
-    body4: 14,
-    body5: 12,
 };
+
+export const FONTS = {
+    h1: { fontSize: SIZES.h1, },
+    h2: { fontSize: SIZES.h2, },
+    h3: { fontSize: SIZES.h3, fontWeight: '600' },
+    h4: { fontSize: SIZES.h4, fontWeight: '500' },
+    h5: { fontSize: SIZES.h5, fontWeight: '400' },
+} 

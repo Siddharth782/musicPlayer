@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ToastAndroid, Modal } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import LinearGradient from 'react-native-linear-gradient'
 import { storage } from '../../store/store'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
@@ -7,6 +7,7 @@ import firestore from '@react-native-firebase/firestore';
 import { COLORS, SIZES } from '../../constants/theme'
 import DatePicker from 'react-native-date-picker'
 import Loader from '../../components/Loader'
+import { firebase } from "@react-native-firebase/auth";
 
 const Add_Info = (props) => {
     const uId = storage.getString('UID')
@@ -19,7 +20,21 @@ const Add_Info = (props) => {
     const [date, setDate] = useState(new Date())
     const [loaderVisible, setLoaderVisible] = useState(false)
 
+    const authStorage = async () => {
+        const auth = firebase.auth().currentUser
+        console.log("in authentication", auth)
 
+        try {
+            await auth.updateProfile({
+                displayName: name
+            })
+        } catch {
+            (error) => {
+                console.log(error)
+            }
+        };
+    }
+  
     const SaveUserDetails = () => {
         setLoaderVisible(true)
         storage.set('Name', name)
@@ -28,32 +43,33 @@ const Add_Info = (props) => {
         storage.set('BirthDate', selectedDate)
 
         try {
-            firestore()
-                .collection('Users')
-                .doc(uId)
-                .set({
-                    name,
-                    age,
-                    gender,
-                    birthDate: selectedDate
-                })
-                .then(() => {
-                    ToastAndroid.show("Saved user details", 2000)
-                    setTimeout(() => {
-                        props.navigation.navigate("SongsArea")
-                    }, 750);
-                    setLoaderVisible(false)
-                }).catch(error => {
-                    if (error.code === 'auth/network-request-failed') {
-                        ToastAndroid.show('Please check your Internet connection!', 2000);
-                    }
-                    else if (error.code === 'auth/unknown') {
-                        ToastAndroid.show('Internal Error! Try again later', 2000);
-                    }
+            (authStorage(),
+                firestore()
+                    .collection('Users')
+                    .doc(uId)
+                    .set({
+                        name,
+                        age,
+                        gender,
+                        birthDate: selectedDate
+                    })
+                    .then(() => {
+                        ToastAndroid.show("Saved user details", 2000)
+                        setTimeout(() => {
+                            props.navigation.navigate("SongsArea")
+                        }, 750);
+                        setLoaderVisible(false)
+                    }).catch(error => {
+                        if (error.code === 'auth/network-request-failed') {
+                            ToastAndroid.show('Check your Internet Connection!', 2000);
+                        }
+                        else if (error.code === 'auth/unknown') {
+                            ToastAndroid.show('Internal Error! Try again later', 2000);
+                        }
 
-                    else ToastAndroid.show(error.code, 2000)
-                    setLoaderVisible(false)
-                });
+                        else ToastAndroid.show(error.code, 2000)
+                        setLoaderVisible(false)
+                    }));
         } catch (err) {
             ToastAndroid.show(err[0], 2000)
             setLoaderVisible(false)

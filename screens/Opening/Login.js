@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import { COLORS, SIZES } from '../../constants/theme'
 import auth from '@react-native-firebase/auth';
 import Loader from '../../components/Loader'
+import { storage } from '../../store/store'
 
 const Login = (props) => {
 
@@ -28,28 +29,51 @@ const Login = (props) => {
         )
     }
 
+    const forgotPassword = async () => {
+        try {
+            auth()
+                .sendPasswordResetEmail(email)
+                .then(ToastAndroid.show("Password Reset email sent", 2000))
+                .catch(error => {
+                    if (error.code === 'auth/network-request-failed') {
+                        ToastAndroid.show('Check your Internet Connection!', 2000);
+                    }
+                    else if (error.code === 'auth/unknown') {
+                        ToastAndroid.show('Internal Error! Try again later', 2000);
+                    }
+
+                    else ToastAndroid.show(error.code, 2000)
+                    setLoaderVisible(false)
+                })
+        } catch (error) {
+            console.log(error)
+        }
+    }
+
     const LoginUser = () => {
         setLoaderVisible(true)
         try {
-            auth()
-                .signInWithEmailAndPassword(email, password)
+            auth().signInWithEmailAndPassword(email, password)
                 .then((res) => {
-                    console.log(res)
+                    console.log("login response", res)
                     ToastAndroid.show('Logged in successfully!', 2000);
-                    setTimeout(() => {
-                        props.navigation.navigate("SongsArea")
-                    }, 750);
+                    storage.set('UID', res?.user?.uid)
+                    storage.set('Name', res?.user?.displayName)
+                    props.navigation.navigate("SongsArea")
                     setLoaderVisible(false)
                 })
                 .catch(error => {
                     if (error.code === 'auth/user-not-found') {
-                        return ToastAndroid.show('No user with this account. Please Sign Up', 2000);
+                        return ToastAndroid.show('No user with this account.Sign Up', 2000);
                     }
                     else if (error.code === 'auth/network-request-failed') {
-                        ToastAndroid.show('Please check your Internet connection!', 2000);
+                        ToastAndroid.show('Check your Internet Connection!', 2000);
                     }
                     else if (error.code === 'auth/unknown') {
                         ToastAndroid.show('Internal Error! Try again later', 2000);
+                    }
+                    else if (error.code === 'auth/wrong-password') {
+                        ToastAndroid.show('Enter Correct Password', 2000);
                     }
 
                     else ToastAndroid.show(error.code, 2000)
@@ -92,7 +116,7 @@ const Login = (props) => {
                 </TouchableOpacity>
 
                 {/* Forgot passowrd */}
-                <TouchableOpacity style={{ alignItems: 'center', marginVertical: 5 }}>
+                <TouchableOpacity style={{ alignItems: 'center', marginVertical: 5 }} onPress={() => forgotPassword()}>
                     <Text style={{ color: COLORS.white, fontSize: 15 }}>Forgot Password?</Text>
                 </TouchableOpacity>
 

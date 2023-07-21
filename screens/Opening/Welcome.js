@@ -5,15 +5,20 @@ import Icons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { storage } from '../../store/store'
 
 const Welcome = (props) => {
-    console.log(storage.getString('userName'))
-    console.log(storage.getString('UID'))
+    console.log("Name",storage.getString('Name'))
+    console.log("UID",storage.getString('UID'))
+
+    if (storage.getString('UID')) {
+        props.navigation.navigate("SongsArea")
+    }
+    
     return (
         <View style={{ flex: 1 }}>
 
             <LinearGradient style={{ flex: 1, paddingHorizontal: 15, paddingVertical: 8 }} colors={['#19D2C1', '#22E3AD']} >
 
                 <View style={{ flex: 0.6, alignItems: 'center', justifyContent: 'center' }}>
-                    <Icons name="account-music" color="black" size={60} />
+                    <Icons name="music" color="black" size={60} />
                     <Text style={{ color: 'white', fontSize: 35, fontWeight: 'bold', textAlign: 'center' }}>Get Access to Millions of songs</Text>
                 </View>
 
