@@ -1,17 +1,44 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import React from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, ToastAndroid } from 'react-native'
+import React,{useEffect} from 'react'
 import LinearGradient from 'react-native-linear-gradient'
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { storage } from '../../store/store'
+const CLIENT_ID = 'be5a81d256794fdaa0fd2c789c428720', CLIENT_SECRET = '25b7aa32030b4b04a4975d83ae847f41'
 
 const Welcome = (props) => {
-    console.log("Name",storage.getString('Name'))
-    console.log("UID",storage.getString('UID'))
+    console.log("Name", storage.getString('Name'))
+    console.log("UID", storage.getString('UID'))
 
-    if (storage.getString('UID')) {
-        props.navigation.navigate("SongsArea")
+    // for fetching access token and sending to other screen if logged in
+    useEffect(() => {
+        fetchToken()
+        if (storage.getString('UID')) {
+            props.navigation.navigate("SongsArea")
+        }
+    }, [])
+
+    // fetching token
+    async function fetchToken() {
+        try {
+            fetch("https://accounts.spotify.com/api/token", {
+                method: 'POST',
+                headers: {
+                    "Content-Type": 'application/x-www-form-urlencoded',
+                },
+                body: `grant_type=client_credentials&client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}`
+            })
+                .then((res) => res.json())
+                .then((res) => { storage.set("accessToken", res.access_token), console.log("access token", res.access_token) })
+                .catch((error) => {
+                    ToastAndroid.show(error.message, 2000)
+                })
+        } catch {
+            (error) => {
+                ToastAndroid.show("Internal Error! Try Again later", 4000)
+            }
+        }
     }
-    
+
     return (
         <View style={{ flex: 1 }}>
 

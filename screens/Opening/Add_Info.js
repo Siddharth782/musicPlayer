@@ -12,12 +12,16 @@ import { firebase } from "@react-native-firebase/auth";
 const Add_Info = (props) => {
     const uId = storage.getString('UID')
     // console.warn(uId);
+
+    // variables for storing filled values
     const [name, setName] = useState('')
     const [age, setAge] = useState('')
     const [gender, setGender] = useState('')
     const [calendarOpen, setCalendarOpen] = useState(false)
     const [selectedDate, setSelectedDate] = useState('')
     const [date, setDate] = useState(new Date())
+
+    // loader visibility
     const [loaderVisible, setLoaderVisible] = useState(false)
 
     const authStorage = async () => {
@@ -34,7 +38,8 @@ const Add_Info = (props) => {
             }
         };
     }
-  
+
+    //   saving user details to firebase
     const SaveUserDetails = () => {
         setLoaderVisible(true)
         storage.set('Name', name)
@@ -47,12 +52,7 @@ const Add_Info = (props) => {
                 firestore()
                     .collection('Users')
                     .doc(uId)
-                    .set({
-                        name,
-                        age,
-                        gender,
-                        birthDate: selectedDate
-                    })
+                    .set({ name, age, gender, birthDate: selectedDate })
                     .then(() => {
                         ToastAndroid.show("Saved user details", 2000)
                         setTimeout(() => {
@@ -77,6 +77,7 @@ const Add_Info = (props) => {
 
     }
 
+    // enabling save button after all fields are filled
     const checkLength = () => {
         return !(name.length > 0 && age.length > 0 && gender.length > 0 && selectedDate.length > 0)
     }
@@ -90,6 +91,7 @@ const Add_Info = (props) => {
         )
     }
 
+    // selecting Date
     function selectingDate(date) {
         setCalendarOpen(false)
         setDate(date)
