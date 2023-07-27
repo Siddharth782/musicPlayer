@@ -1,4 +1,8 @@
 {
   "name": "musicPlayer",
-  "displayName": "musicPlayer"
+  "displayName": "musicPlayer",
+  "expo": {
+    "scheme": "app://open.my.app"
+  },
+  "scheme":"app://open.my.app"
 }
