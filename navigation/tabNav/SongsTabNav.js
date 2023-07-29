@@ -3,13 +3,14 @@ import { createMaterialBottomTabNavigator } from '@react-navigation/material-bot
 import Dashboard from '../../screens/songsArea/Dashboard';
 import { COLORS } from '../../constants/theme';
 import Search from '../../screens/songsArea/Search';
+import FirstScreenStackNav from '../stackNav/FirstScreenStackNav';
 
 const Tab = createMaterialBottomTabNavigator();
 
 const SongsTabNav = () => {
     return (
-        <Tab.Navigator  barStyle={{ height:70 }} shifting={true} activeColor={COLORS.green} inactiveColor={COLORS.blue} >
-            <Tab.Screen name="Dashboard" component={Dashboard} />
+        <Tab.Navigator initialRouteName='FirstScreen'  barStyle={{ height:70 }} shifting={true} activeColor={COLORS.green} inactiveColor={COLORS.blue} >
+            <Tab.Screen name="FirstScreen" component={FirstScreenStackNav} />
             <Tab.Screen name="Search" component={Search} />
             <Tab.Screen name="Library" component={Dashboard} />
         </Tab.Navigator>

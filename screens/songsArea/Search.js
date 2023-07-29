@@ -1,17 +1,23 @@
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Image, ScrollView, ToastAndroid } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import Loader from '../../components/Loader'
 import { storage } from '../../store/store'
+import { DisplayArtistsName } from '../../components/DisplayArtistName'
+import { Player } from '../../components/CurrentStatus'
+import { Audio } from 'expo-av'
 
 const Search = (props) => {
     // getting access Token from storage
     let accessToken = storage.getString("accessToken")
 
+    const { currentSong, setCurrentSong, setCurrentTrack, currentTrack, setIsPlaying } = useContext(Player)
+
     // array for displaying search results
     const [allTracks, setAllTracks] = useState([])
-    const [allAlbums, setAllAlbums] = useState([])
+    const [allPlaylist, setAllPlaylist] = useState([])
+    const [allAlbum, setAllAlbum] = useState([])
     const [allArtists, setAllArtists] = useState([])
 
     // loader Visibility & search vakue
@@ -33,44 +39,21 @@ const Search = (props) => {
 
         try {
 
-            let res = await fetch(`https://api.spotify.com/v1/search?q=${searchValue}&type=track%2Calbum%2Cartist&limit=20`, searchParameters)
+            let resTracks = await fetch(`https://api.spotify.com/v1/search?q=${searchValue}&type=track&limit=20`, searchParameters)
+            let res = await fetch(`https://api.spotify.com/v1/search?q=${searchValue}&type=album%2Cplaylist&limit=10`, searchParameters)
             let resArtist = await fetch(`https://api.spotify.com/v1/search?q=${searchValue}&type=artist&limit=5`, searchParameters)
             res = await res?.json()
+            resTracks = await resTracks?.json()
             resArtist = await resArtist?.json()
 
-            setAllTracks(res?.tracks?.items)
-            setAllAlbums(res?.albums?.items)
+            setAllTracks(resTracks?.tracks?.items)
+            setAllPlaylist(res?.playlists?.items)
+            setAllAlbum(res?.albums?.items)
             setAllArtists(resArtist?.artists?.items)
 
 
-            console.log("all results", res)
+            // console.log("all results", resTracks)
 
-            // let trackID = await fetch(`https://api.spotify.com/v1/search?q=${searchValue}&type=track`, searchParameters)
-
-            // if (trackID) {
-
-            // }
-            // else {
-            // let artistID = await fetch(`https://api.spotify.com/v1/search?q=${searchValue}&type=artist`, searchParameters)
-
-            // artistID = await artistID?.json()
-            // artistID = artistID?.artists?.items[0]?.id
-            // console.log("artist ID", searchValue, artistID)
-
-            // let artistAlbums = await fetch(`https://api.spotify.com/v1/artists/${artistID}/albums?include_groups=album&market=IN`, searchParameters)
-
-            // let artistTracks = await fetch(`https://api.spotify.com/v1/artists/${artistID}/top-tracks?market=IN`, searchParameters)
-
-            // artistAlbums = await artistAlbums?.json()
-
-            // artistTracks = await artistTracks?.json()
-
-            // artistAlbums = artistAlbums.items
-            // artistTracks = artistTracks.tracks
-
-            // setArtistAllAlbums(artistAlbums)
-            // setArtistAllTracks(artistTracks)
-            // }
             setLoaderVisible(false)
         } catch (error) {
             ToastAndroid.show(error.message, 2000)
@@ -78,39 +61,22 @@ const Search = (props) => {
         }
     }
 
-
-    // for displaying artists name
-    function displayArtistsName({ names }) {
-        let artistName = ''
-
-        for (let index = 0; index < names?.length; index++) {
-            const element = names[index];
-            if (index === 0) {
-                artistName += element.name
-            }
-            else { artistName += ", ", artistName += element.name }
-        }
-
-        artistName = artistName.length > 25 ? `${artistName.slice(0, 25)}...` : artistName
-        return artistName
-    }
-
-    // for displaying albums 
-    function DisplayAlbums({ item }) {
-
+    // for displaying playlist 
+    function DisplayPlaylistsandAlbums({ item }) {
         return (
-            <View style={{ flexDirection: 'row', marginVertical: 5 }}>
-                <Image source={{ uri: item?.images[2]?.url }} style={{ height: item?.images[2]?.height, width: item?.images[2]?.width, marginHorizontal: 15 }} />
+            <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, description: item?.description, coverImage: item?.images[0]?.url, name: item?.name, type: item?.type })} style={{ flexDirection: 'row', marginVertical: 5 }}>
+                <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : "https://developer.spotify.com/images/guidelines/design/icon1@2x.png") }} style={{ height: 64, width: 64, marginHorizontal: 15 }} />
 
-                <View style={{ width: '70%' }}>
-                    <Text style={{ ...FONTS.h4, color: COLORS.white, flexWrap: 'wrap' }}>{item?.name}</Text>
+                <View style={{ width: '65%' }}>
+                    <Text numberOfLines={1} style={{ ...FONTS.h4, color: COLORS.white, flexWrap: 'wrap' }}>{item?.name}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <Text>{item?.type === "playlist" && "Playlist"}</Text>
                         <Text>{item?.type === "album" && "Album ∙ "}</Text>
-                        <Text>{displayArtistsName({ names: item?.artists })}</Text>
+                        <Text numberOfLines={1}>{DisplayArtistsName({ names: item?.artists })}</Text>
                     </View>
                 </View>
 
-            </View>
+            </TouchableOpacity>
         )
     }
 
@@ -118,17 +84,17 @@ const Search = (props) => {
     function DisplayTracks({ item }) {
 
         return (
-            <View style={{ flexDirection: 'row', marginVertical: 5 }}>
-                <Image source={{ uri: item?.album?.images[2]?.url }} style={{ height: item?.album?.images[2]?.height, width: item?.album?.images[2]?.width, marginHorizontal: 15 }} />
+            <TouchableOpacity onPress={() => { playTrack({ item }) }} style={{ flexDirection: 'row', marginVertical: 5 }}>
+                <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : "https://developer.spotify.com/images/guidelines/design/icon1@2x.png") }} style={{ height: 64, width: 64, marginHorizontal: 15 }} />
 
-                <View style={{ width: '70%' }}>
-                    <Text style={{ ...FONTS.h4, color: COLORS.white, flexWrap: 'wrap' }}>{item?.name}</Text>
+                <View style={{ width: '65%' }}>
+                    <Text numberOfLines={1} style={{ ...FONTS.h4, color: (currentTrack?.id === item?.id ? COLORS.MidGreen : COLORS.white), flexWrap: 'wrap' }}>{item?.name}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Text>{item?.type === "track" ? "Song ∙ " : null}</Text>
-                        <Text>{displayArtistsName({ names: item?.artists })}</Text>
+                        <Text numberOfLines={1}>{DisplayArtistsName({ names: item?.artists })}</Text>
                     </View>
                 </View>
-            </View>
+            </TouchableOpacity>
         )
     }
 
@@ -136,10 +102,10 @@ const Search = (props) => {
     function DisplayArtists({ item }) {
         return (
             <View style={{ flexDirection: 'row', marginVertical: 5 }}>
-                <Image source={{ uri: (item?.images[2]?.url ? item?.images[2]?.url : 'https://developer.spotify.com/images/guidelines/design/icon1@2x.png') }} style={{ height: 64, width: 64, marginHorizontal: 15 }} />
+                <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : 'https://developer.spotify.com/images/guidelines/design/icon1@2x.png') }} style={{ height: 64, width: 64, marginHorizontal: 15 }} />
 
                 <View style={{ width: '70%' }}>
-                    <Text style={{ ...FONTS.h4, color: COLORS.white, flexWrap: 'wrap' }}>{item?.name}</Text>
+                    <Text numberOfLines={1} style={{ ...FONTS.h4, color: COLORS.white, flexWrap: 'wrap' }}>{item?.name}</Text>
                     <Text>{item?.type === "artist" ? "Artist" : null}</Text>
                 </View>
             </View>
@@ -156,6 +122,36 @@ const Search = (props) => {
         )
     }
 
+    // For playing selected track
+    async function playTrack({ item }) {
+
+        await currentSong?.stopAsync()
+        let song_url = item?.preview_url
+        try {
+
+            await Audio.setAudioModeAsync({
+                staysActiveInBackground: true,
+                shouldDuckAndroid: false
+            })
+
+            const { sound, status } = await Audio.Sound.createAsync(
+                {
+                    uri: song_url
+                }
+            )
+
+            setCurrentSong(sound)
+            setIsPlaying(true)
+            setCurrentTrack(item)
+            await sound?.playAsync()
+        } catch (error) {
+            if (error.message === "Cannot load an AV asset from a null playback source") {
+                ToastAndroid.show("Free Preview Not Available", 3000)
+            }
+            else ToastAndroid.show(error.message, 3000)
+        }
+    }
+
     return (
         <View style={{ flex: 1, backgroundColor: 'black', }}>
             {renderHeader()}
@@ -163,7 +159,7 @@ const Search = (props) => {
             {/* search bar */}
             <View style={{ flexDirection: 'row', marginHorizontal: 15, marginVertical: 5 }}>
 
-                <TextInput placeholder='Search songs,artists and albums' placeholderTextColor={COLORS.gray} style={{ backgroundColor: COLORS.black, borderRadius: SIZES.radius, borderWidth: 1, borderColor: COLORS.white, margin: 5, flex: 1, height: 40 }} value={searchValue} onChangeText={(val) => setSearchValue(val)} />
+                <TextInput placeholder='Search songs,artists and playlists' placeholderTextColor={COLORS.gray} style={{ backgroundColor: COLORS.black, borderRadius: SIZES.radius, borderWidth: 1, borderColor: COLORS.white, margin: 5, flex: 1, height: 40 }} value={searchValue} onChangeText={(val) => setSearchValue(val)} />
 
                 <TouchableOpacity style={{ backgroundColor: COLORS.black, marginVertical: 5, justifyContent: 'center', alignItems: 'center' }} onPress={() => searchData()}>
                     <Icon name='card-search' color={COLORS.white} size={40} />
@@ -171,13 +167,14 @@ const Search = (props) => {
 
             </View>
             <Loader loaderVisible={loaderVisible} />
-            {(allAlbums?.length > 0 || allTracks?.length > 0 || allArtists.length > 0) && <Text style={{ ...FONTS.h2, color: COLORS.white, marginHorizontal: 15 }}>Top Results</Text>}
+            {(allPlaylist?.length > 0 || allTracks?.length > 0 || allArtists.length > 0) && <Text style={{ ...FONTS.h2, color: COLORS.white, marginHorizontal: 15 }}>Top Results</Text>}
 
             {/* displaying results */}
             <ScrollView>
-                <View style={{ margin: 5 }}>
+                <View style={{ marginBottom: 50, marginHorizontal: 5 }}>
                     {allTracks?.map((item, index) => <DisplayTracks item={item} key={index} />)}
-                    {allAlbums?.map((item, index) => <DisplayAlbums item={item} key={index} />)}
+                    {allAlbum?.map((item, index) => <DisplayPlaylistsandAlbums item={item} key={index} />)}
+                    {allPlaylist?.map((item, index) => <DisplayPlaylistsandAlbums item={item} key={index} />)}
                     {allArtists?.map((item, index) => <DisplayArtists item={item} key={index} />)}
                 </View>
             </ScrollView>
