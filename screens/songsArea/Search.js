@@ -12,7 +12,7 @@ const Search = (props) => {
     // getting access Token from storage
     let accessToken = storage.getString("accessToken")
 
-    const { currentSong, setCurrentSong, setCurrentTrack, currentTrack, setIsPlaying } = useContext(Player)
+    const { currentSong, setCurrentSong, setCurrentTrack, currentTrack, setIsPlaying, setIsLoading } = useContext(Player)
 
     // array for displaying search results
     const [allTracks, setAllTracks] = useState([])
@@ -27,6 +27,10 @@ const Search = (props) => {
     // searching data from backend
     async function searchData() {
         setLoaderVisible(true)
+        setAllAlbum([])
+        setAllTracks([])
+        setAllArtists([])
+        setAllPlaylist([])
 
         // parameters for passing to backend 
         let searchParameters = {
@@ -124,7 +128,8 @@ const Search = (props) => {
 
     // For playing selected track
     async function playTrack({ item }) {
-
+        setCurrentTrack(item)
+        setIsLoading(true)
         await currentSong?.stopAsync()
         let song_url = item?.preview_url
         try {
@@ -134,7 +139,7 @@ const Search = (props) => {
                 shouldDuckAndroid: false
             })
 
-            const { sound, status } = await Audio.Sound.createAsync(
+            const { sound } = await Audio.Sound.createAsync(
                 {
                     uri: song_url
                 }
@@ -142,9 +147,10 @@ const Search = (props) => {
 
             setCurrentSong(sound)
             setIsPlaying(true)
-            setCurrentTrack(item)
+            setIsLoading(false)
             await sound?.playAsync()
         } catch (error) {
+            setIsLoading(false)
             if (error.message === "Cannot load an AV asset from a null playback source") {
                 ToastAndroid.show("Free Preview Not Available", 3000)
             }
@@ -157,20 +163,23 @@ const Search = (props) => {
             {renderHeader()}
 
             {/* search bar */}
-            <View style={{ flexDirection: 'row', marginHorizontal: 15, marginVertical: 5 }}>
+            <View style={{ flexDirection: 'row', marginHorizontal: 15, marginVertical: 5, alignItems:'center' }}>
 
-                <TextInput placeholder='Search songs,artists and playlists' placeholderTextColor={COLORS.gray} style={{ backgroundColor: COLORS.black, borderRadius: SIZES.radius, borderWidth: 1, borderColor: COLORS.white, margin: 5, flex: 1, height: 40 }} value={searchValue} onChangeText={(val) => setSearchValue(val)} />
+                <View style={{ backgroundColor: COLORS.black, borderRadius: SIZES.radius, borderWidth: 1, borderColor: COLORS.white,flex: 1, height: 40, justifyContent:'center' }} >
+                    <TextInput placeholder='Search songs,artists and playlists' placeholderTextColor={COLORS.gray} value={searchValue} style={{paddingLeft:5}} onChangeText={(val) => setSearchValue(val)} />
+                    <Icon name='close' size={20} color={COLORS.white} onPress={() => setSearchValue('')} style={{position:'absolute', right:10, alignSelf:'center'}} />
+                </View>
 
                 <TouchableOpacity style={{ backgroundColor: COLORS.black, marginVertical: 5, justifyContent: 'center', alignItems: 'center' }} onPress={() => searchData()}>
                     <Icon name='card-search' color={COLORS.white} size={40} />
                 </TouchableOpacity>
 
             </View>
-            <Loader loaderVisible={loaderVisible} />
-            {(allPlaylist?.length > 0 || allTracks?.length > 0 || allArtists.length > 0) && <Text style={{ ...FONTS.h2, color: COLORS.white, marginHorizontal: 15 }}>Top Results</Text>}
 
+            {(allPlaylist?.length > 0 || allTracks?.length > 0 || allArtists?.length > 0) && <Text style={{ ...FONTS.h2, color: COLORS.white, marginHorizontal: 15 }}>Top Results</Text>}
             {/* displaying results */}
             <ScrollView>
+                <Loader loaderVisible={loaderVisible} />
                 <View style={{ marginBottom: 50, marginHorizontal: 5 }}>
                     {allTracks?.map((item, index) => <DisplayTracks item={item} key={index} />)}
                     {allAlbum?.map((item, index) => <DisplayPlaylistsandAlbums item={item} key={index} />)}

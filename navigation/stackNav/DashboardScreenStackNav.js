@@ -1,10 +1,10 @@
 import React from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import Details from '../../screens/songsArea/Details';
 import Dashboard from '../../screens/songsArea/Dashboard';
+import Details from '../../screens/songsArea/Details';
 const Stack = createNativeStackNavigator();
 
-const FirstScreenStackNav = () => {
+const DashboardScreenStackNav = () => {
     return (
         <Stack.Navigator initialRouteName='Dashboard'>
             <Stack.Screen options={{ gestureEnabled: false, headerShown: false, headerLeft: () => <></>, }} name="Dashboard" component={Dashboard} />
@@ -13,4 +13,4 @@ const FirstScreenStackNav = () => {
     )
 }
 
-export default FirstScreenStackNav
+export default DashboardScreenStackNav

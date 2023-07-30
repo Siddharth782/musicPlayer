@@ -4,18 +4,15 @@ import LinearGradient from 'react-native-linear-gradient'
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons'
 import { storage } from '../../store/store'
 import * as WebBrowser from 'expo-web-browser';
-// const CLIENT_ID = 'be5a81d256794fdaa0fd2c789c428720', CLIENT_SECRET = '25b7aa32030b4b04a4975d83ae847f41'
 
 const Welcome = (props) => {
-    // console.log("Name", storage.getString('Name'))
-    // console.log("UID", storage.getString('UID'))
 
     // for checking if the previous access token is still valid
     useEffect(() => {
         const currentTime = new Date().getTime()
 
         if ((currentTime - storage.getNumber('authTime')) / 1000 < 3600) {
-            props.navigation.navigate("SongsArea")
+            props.navigation.navigate("MusicArea")
         } else {
             storage.clearAll()
         }
@@ -41,7 +38,7 @@ const Welcome = (props) => {
 
         const request = await WebBrowser.openAuthSessionAsync(`https://accounts.spotify.com/authorize?redirect_uri=app://open.my.app&response_type=token&client_id=be5a81d256794fdaa0fd2c789c428720&response_token=token&show_dialog=true&scope=user-read-private, user-read-email, user-library-read,user-read-recently-played,user-top-read,playlist-read-private,playlist-read-collaborative,playlist-modify-public`, "app://open.my.app")
         console.log(request)
-        if (request.url.split("?")[1] === "error=access_denied") {
+        if (request.url?.split("?")[1] === "error=access_denied") {
             console.log("Hello")
         }
         else if (request.type === "success") {
@@ -51,16 +48,16 @@ const Welcome = (props) => {
             storage.set("tokenType", splitUpParamas?.token_type)
             storage.set("authTime", new Date().getTime())
             // console.log("the split up params", splitUpParamas)
-            props.navigation.navigate("SongsArea")
+            props.navigation.navigate("MusicArea")
         }
         else if (request.type === "cancelled") {
             ToastAndroid.show('Cancelled', 3000)
         }
         else if (request.type === "dismiss") {
-            ToastAndroid.show("Failed Log In", 3000)
+            // ToastAndroid.show("Failed Log In", 3000)
         }
         else {
-            ToastAndroid.show("Please Enter Correct Credentials", 3000)
+            ToastAndroid.show("Please Try again", 3000)
         }
     }
 
@@ -76,7 +73,7 @@ const Welcome = (props) => {
 
                 <View style={{ flex: 0.4, justifyContent: 'center' }}>
 
-                    <TouchableOpacity onPress={() => props.navigation.navigate("SignUp")}>
+                    <TouchableOpacity onPress={() => authentication()}>
                         <LinearGradient style={styles.button} colors={["#40128B", "#DD58D6", "#DD58D6"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                             <Text style={styles.buttonText}>Sign Up</Text>
                         </LinearGradient>

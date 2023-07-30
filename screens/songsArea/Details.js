@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ToastAndroid } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ToastAndroid, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState, useContext } from 'react'
 import { COLORS, FONTS } from '../../constants/theme'
 import { storage } from '../../store/store'
@@ -6,6 +6,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import { Audio } from 'expo-av'
 import { Player } from '../../components/CurrentStatus'
 import { DisplayArtistsName } from '../../components/DisplayArtistName'
+import Loader from '../../components/Loader'
 
 const Details = (props) => {
 
@@ -13,9 +14,11 @@ const Details = (props) => {
     const [accessToken, setAccessToken] = useState(storage.getString('accessToken'))
 
     const [tracks, setTracks] = useState([])
+    const [track, setTrack] = useState(null)
+    const [loaderVisible, setLoaderVisible] = useState(true)
 
-    const { currentSong, setCurrentSong, setCurrentTrack, currentTrack, setIsPlaying, setIsLoading } = useContext(Player)
-
+    const { currentSong, setCurrentSong, setCurrentTrack, currentTrack, setIsPlaying, setIsLoading, setPlaylistName, setPlaylist, setCurrentIndex, playlist } = useContext(Player)
+    setPlaylistName(name)
     let dataParameters = {
         method: 'GET',
         headers: {
@@ -31,38 +34,55 @@ const Details = (props) => {
     }, [])
 
     function getPlaylistTracks() {
-        fetch(`https://api.spotify.com/v1/playlists/${id}/tracks`, dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setTracks(res?.items) })
-        // .then((res) => {console.log("track response album",res?.items[0].track.album), console.log("track response artist",res?.items[0].track.artists)})
+
+        try {
+            fetch(`https://api.spotify.com/v1/playlists/${id}/tracks`, dataParameters)
+                .then((res) => res.json())
+                .then((res) => { setTracks(res?.items), setPlaylist(res?.items), setLoaderVisible(false) })
+            // .then((res) => {console.log("track response album",res?.items[0].track.album), console.log("track response artist",res?.items[0].track.artists)})
+        } catch (error) {
+            ToastAndroid.show(error.message, 3000)
+        }
+
     }
 
     function getSingleTrack() {
-        fetch(`https://api.spotify.com/v1/tracks/${id}`, dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setTracks(res) })
-        // .then((res) => {console.log("track response album",res?.items[0].track.album), console.log("track response artist",res?.items[0].track.artists)})
+        try {
+            fetch(`https://api.spotify.com/v1/tracks/${id}`, dataParameters)
+                .then((res) => res.json())
+                .then((res) => { setTrack(res), setPlaylist([...playlist, res]); setLoaderVisible(false) })
+            // .then((res) => {console.log("track response album",res?.items[0].track.album), console.log("track response artist",res?.items[0].track.artists)})
+        } catch (error) {
+            ToastAndroid.show(error.message, 3000)
+        }
     }
 
     function getAlbumTracks() {
-        fetch(`https://api.spotify.com/v1/albums/${id}/tracks`, dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setTracks(res?.items) })
-        // .then((res) => {console.log("track response album",res?.items[0].track.album), console.log("track response artist",res?.items[0].track.artists)})
+        try {
+            fetch(`https://api.spotify.com/v1/albums/${id}/tracks`, dataParameters)
+                .then((res) => res.json())
+                .then((res) => { setTracks(res?.items), setPlaylist(res?.items), setLoaderVisible(false) })
+            // .then((res) => {console.log("track response album",res?.items[0].track.album), console.log("track response artist",res?.items[0].track.artists)})
+        } catch (error) {
+            ToastAndroid.show(error.message, 3000)
+        }
+
     }
 
     // for rendering header
     function renderHeader() {
         return (
             <View style={styles.header}>
-                <Icon name='arrow-left-thin' onPress={() => props.navigation.navigate("Dashboard")} style={{ position: 'absolute', left: 10, top: 15, zIndex: 1, backgroundColor: 'black', borderRadius: 16 }} color={'white'} size={32} />
+                <Icon name='arrow-left-thin' onPress={() => props.navigation.goBack()} style={{ position: 'absolute', left: 10, top: 15, zIndex: 1, backgroundColor: 'black', borderRadius: 16 }} color={'white'} size={32} />
                 <Image source={{ uri: coverImage }} style={{ height: 300, width: '100%', marginVertical: 5 }} />
             </View>
         )
     }
 
-    async function playTrack({ item }) {
+    async function playTrack({ item, id }) {
+        console.log("song index", id)
         setCurrentTrack(item)
+        setCurrentIndex(id)
         setIsLoading(true)
 
         await currentSong?.stopAsync()
@@ -94,9 +114,10 @@ const Details = (props) => {
     }
 
 
-    function DisplayTracks({ item }) {
+    function DisplayTracks({ item, id }) {
+        // setLoaderVisible(false)
         return (
-            <TouchableOpacity onPress={() => { playTrack({ item }) }} style={{ flexDirection: 'row' }}>
+            <TouchableOpacity onPress={() => { playTrack({ item, id }) }} style={{ flexDirection: 'row' }}>
                 <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : "https://developer.spotify.com/images/guidelines/design/icon1@2x.png") }} style={{ height: 60, width: 60, margin: 5 }} />
                 <View style={{ justifyContent: 'center', marginLeft: 10, width: '70%' }}>
                     <Text numberOfLines={1} style={[styles.displayName, { color: (currentTrack?.id === item?.id ? COLORS.MidGreen : COLORS.white) }]}>{item?.name}</Text>
@@ -113,10 +134,12 @@ const Details = (props) => {
             <Text style={{ marginHorizontal: 15, ...FONTS.h2, color: 'white' }}>{name}</Text>
             <Text style={{ marginHorizontal: 15 }}>{description}</Text>
 
-            <View style={{ marginHorizontal: 15, marginTop: 10, marginBottom: (currentTrack?58:18) }}>
-                {type === "playlist" && tracks?.length > 0 && tracks.map((item, index) => <DisplayTracks item={item.track} key={index} />)}
-                {type === "album" && tracks?.length > 0 && tracks.map((item, index) => <DisplayTracks item={item} key={index} />)}
-                {type === "track" && <DisplayTracks item={tracks} />}
+
+            <View style={{ marginHorizontal: 15, marginTop: 10, marginBottom: (currentTrack ? 58 : 18) }}>
+                <Loader loaderVisible={loaderVisible} />
+                {type === "playlist" && tracks?.length > 0 && tracks.map((item, index) => <DisplayTracks item={item.track} key={index} id={index} />)}
+                {type === "album" && tracks?.length > 0 && tracks.map((item, index) => <DisplayTracks item={item} key={index} id={index} />)}
+                {type === "track" && track && <DisplayTracks item={track} id={0} />}
             </View>
         </ScrollView>
 

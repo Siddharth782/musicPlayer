@@ -1,9 +1,10 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList, Modal } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { COLORS, FONTS } from '../../constants/theme'
+import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import { storage } from '../../store/store'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import { DisplayArtistsName } from '../../components/DisplayArtistName'
+import Loader from '../../components/Loader'
 const base_URL = 'https://api.spotify.com/v1'
 
 const Dashboard = (props) => {
@@ -20,7 +21,6 @@ const Dashboard = (props) => {
     const [workout, setWorkout] = useState([])
     const [kPop, setKPop] = useState([])
     const [party, setParty] = useState([])
-    const [hipHop, setHipHop] = useState([])
     const [chill, setChill] = useState([])
     const [mood, setMood] = useState([])
     const [TopTracks, setTopTracks] = useState([])
@@ -30,7 +30,8 @@ const Dashboard = (props) => {
     const [artistsTwo, setArtistsTwo] = useState([])
     const [artistsThree, setArtistsThree] = useState([])
 
-    const [firstName, setFirstName] = useState(storage.getString('Name'))
+    const [loaderVisible, setLoaderVisible] = useState(true)
+    const [name, setName] = useState(storage.getString('Name'))
 
     // parameters to be passed while getting songs
     let dataParameters = {
@@ -43,7 +44,7 @@ const Dashboard = (props) => {
 
     // fetching songs thru API
     useEffect(() => {
-        !firstName && getCurrentUser()
+        !name && getCurrentUser()
         userplaylists.length === 0 && getCurrentUserPlaylist()
         TopTracks.length === 0 && getCurrentUserTopTracks()
         artists.length === 0 && getCurrentUserTopArtists()
@@ -54,7 +55,6 @@ const Dashboard = (props) => {
         mood.length === 0 && getMood()
         chill.length === 0 && getChill()
         party.length === 0 && getParty()
-        hipHop.length === 0 && getHipHop()
     }, [])
 
 
@@ -62,7 +62,7 @@ const Dashboard = (props) => {
     async function getCurrentUserTopTracks() {
         fetch(base_URL + '/me/top/tracks?limit=10', dataParameters)
             .then((res) => res.json())
-            .then((res) => { setTopTracks(res.items) })
+            .then((res) => { setTopTracks(res.items), setLoaderVisible(false) })
         // .then((res) => { console.log("top tracks", res.items), setTopTracks(res.items) })
     }
 
@@ -104,7 +104,7 @@ const Dashboard = (props) => {
     async function getCurrentUser() {
         fetch(base_URL + '/me', dataParameters)
             .then((res) => res.json())
-            .then((res) => { setFirstName(res?.display_name?.split(' ')[0]), storage.set('email', res.email), storage.set('Name', res.display_name) })
+            .then((res) => { setName(res?.display_name), storage.set('email', res?.email), storage.set('Name', res?.display_name) })
         // .then((res) => { console.log(res), setFirstName(res.display_name.split(' ')[0]), storage.set('email', res.email), storage.set('Name', res.display_name) })
     }
 
@@ -148,14 +148,6 @@ const Dashboard = (props) => {
         // .then((res) => { console.log("party", res?.playlists?.items), setParty(res?.playlists?.items) })
     }
 
-    // hip hop playlist
-    async function getHipHop() {
-        fetch(base_URL + '/browse/categories/0JQ5DAqbMKFQ00XGBls6ym/playlists?limit=10', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setHipHop(res?.playlists?.items) })
-        // .then((res) => { console.log("HipHop", res?.playlists?.items), setHipHop(res?.playlists?.items) })
-    }
-
     // chill playlist
     async function getChill() {
         fetch(base_URL + '/browse/categories/0JQ5DAqbMKFFzDl7qN9Apr/playlists?limit=10', dataParameters)
@@ -178,19 +170,23 @@ const Dashboard = (props) => {
 
         return (
             <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, description: item?.description, coverImage: item?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
-                <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : emptyImageUrl) }} style={{ height: 150, width: 150, marginVertical: 5 }} />
+                <View style={[{ backgroundColor: COLORS.MidGreen, justifyContent: 'center' }, styles.imageDisplay]}>
+                    <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : emptyImageUrl) }} style={styles.imageDisplay} />
+                </View>
                 <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
                 <Text numberOfLines={2} style={{ flexWrap: 'wrap', width: '70%' }}>{DisplayArtistsName({ names: item?.artists })}</Text>
             </TouchableOpacity>
         )
     }
 
-    // For showing playlists -> Bollywood, Mood, Party, K-Pop, Chill, Workout, Hip-Hop 
+    // For showing playlists -> Bollywood, Mood, Party, K-Pop, Chill, Workout
     function DisplayOtherPlaylists({ item }) {
 
         return (
             <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, description: item?.description, coverImage: item?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
-                <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : emptyImageUrl) }} style={{ height: 150, width: 150, marginVertical: 5 }} />
+                <View style={[{ backgroundColor: COLORS.MidGreen, justifyContent: 'center' }, styles.imageDisplay]}>
+                    <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : emptyImageUrl) }} style={styles.imageDisplay} />
+                </View>
                 <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
                 <Text numberOfLines={2}>{item?.description}</Text>
             </TouchableOpacity>
@@ -198,10 +194,12 @@ const Dashboard = (props) => {
     }
 
     function DisplayFavoriteArtistTracks({ item }) {
-        
+
         return (
             <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, coverImage: item?.album?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
-                <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : emptyImageUrl) }} style={{ height: 150, width: 150, marginVertical: 5 }} />
+                <View style={[{ backgroundColor: COLORS.MidGreen, justifyContent: 'center' }, styles.imageDisplay]}>
+                    <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : emptyImageUrl) }} style={styles.imageDisplay} />
+                </View>
                 <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
                 <Text numberOfLines={2}>{DisplayArtistsName({ names: item?.artists })}</Text>
             </TouchableOpacity>
@@ -212,7 +210,9 @@ const Dashboard = (props) => {
 
         return (
             <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, coverImage: item?.album?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
-                <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : emptyImageUrl) }} style={{ height: 150, width: 150, marginVertical: 5 }} />
+                <View style={[{ backgroundColor: COLORS.MidGreen, justifyContent: 'center' }, styles.imageDisplay]}>
+                    <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : emptyImageUrl) }} style={styles.imageDisplay} />
+                </View>
                 <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
                 <Text numberOfLines={2}>{DisplayArtistsName({ names: item?.artists })}</Text>
             </TouchableOpacity>
@@ -222,14 +222,17 @@ const Dashboard = (props) => {
     return (
         <ScrollView style={{ backgroundColor: COLORS.black, flex: 1, padding: 15 }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text numberOfLines={1} style={{ color: 'white', fontSize: 20 }}>{firstName ? `Welcome ${firstName}` : 'Welcome'}</Text>
+                <Text numberOfLines={1} style={{ color: 'white', fontSize: 20 }}>{name ? `Welcome ${name?.split(' ')[0]}` : 'Welcome'}</Text>
                 <TouchableOpacity onPress={() => props.navigation.navigate("Settings")}>
                     <Icon name="cog" color={COLORS.white} size={20} />
                 </TouchableOpacity>
             </View>
 
-            <View style={{ marginVertical: 20 }}>
+            <Modal transparent={true} visible={loaderVisible}>
+                <Loader loaderVisible={loaderVisible} />
+            </Modal>
 
+            <View style={{ marginVertical: 20 }}>
 
                 {TopTracks?.length > 0 && (<Text style={styles.header}>Your Favorite</Text>)}
                 {TopTracks?.length > 0 && <FlatList data={TopTracks} renderItem={({ item }) => <DisplayFavoriteTracks item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
@@ -267,8 +270,6 @@ const Dashboard = (props) => {
                 {party?.length > 0 && (<Text style={styles.header}>Party is in Air</Text>)}
                 {party?.length > 0 && <FlatList data={party} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
 
-                {hipHop?.length > 0 && (<Text style={styles.header}>Hip Hop</Text>)}
-                {hipHop?.length > 0 && <FlatList data={hipHop} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
 
             </View>
 
@@ -288,9 +289,14 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap'
     },
     itemStyle: {
-        marginVertical: 10,
-        marginRight: 5,
+        margin: 10,
         width: 160
+    },
+    imageDisplay: {
+        height: 150,
+        width: 150,
+        marginBottom: 5,
+        borderRadius: SIZES.radius
     }
 })
 

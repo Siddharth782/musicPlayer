@@ -5,10 +5,9 @@ export function DisplayArtistsName(props) {
 
     for (let index = 0; index < names?.length; index++) {
         const element = names[index];
-        if (index === 0) {
-            artistName += element?.name
-        }
-        else { artistName += ", ", artistName += element.name }
+        artistName += element?.name
+        artistName += ", "
     }
-    return artistName
+
+    return artistName.slice(0, artistName.length-2)
 }
