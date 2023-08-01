@@ -21,14 +21,9 @@ const Dashboard = (props) => {
     const [workout, setWorkout] = useState([])
     const [kPop, setKPop] = useState([])
     const [party, setParty] = useState([])
-    const [chill, setChill] = useState([])
     const [mood, setMood] = useState([])
     const [TopTracks, setTopTracks] = useState([])
-
     const [artists, setArtists] = useState([])
-    const [artistsOne, setArtistsOne] = useState([])
-    const [artistsTwo, setArtistsTwo] = useState([])
-    const [artistsThree, setArtistsThree] = useState([])
 
     const [loaderVisible, setLoaderVisible] = useState(true)
     const [name, setName] = useState(storage.getString('Name'))
@@ -53,7 +48,6 @@ const Dashboard = (props) => {
         kPop.length === 0 && getKPop()
         workout.length === 0 && getWorkOut()
         mood.length === 0 && getMood()
-        chill.length === 0 && getChill()
         party.length === 0 && getParty()
     }, [])
 
@@ -69,30 +63,9 @@ const Dashboard = (props) => {
     async function getCurrentUserTopArtists() {
         fetch(base_URL + '/me/top/artists?limit=10', dataParameters)
             .then((res) => res.json())
-            .then((res) => { getTopArtistsTracks(res?.items), setArtists(res?.items) })
+            .then((res) => { setArtists(res?.items) })
         // .then((res) => { console.log("top artists", res?.items), getTopArtistsTracks(res?.items), setArtists(res?.items) })
     }
-
-
-    async function getTopArtistsTracks(params) {
-
-        console.log(params[0].id)
-        fetch(base_URL + '/artists/' + params[0].id + '/top-tracks?country=IN', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setArtistsOne(res.tracks) })
-        // .then((res) => { console.log("1st artists tracks", res.tracks), setArtistsOne(res.tracks) })
-
-        fetch(base_URL + '/artists/' + params[1].id + '/top-tracks?country=IN', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setArtistsTwo(res.tracks) })
-        // .then((res) => { console.log("2nd artists tracks", res.tracks), setArtistsTwo(res.tracks) })
-
-        fetch(base_URL + '/artists/' + params[2].id + '/top-tracks?country=IN', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setArtistsThree(res.tracks) })
-        // .then((res) => { console.log("3rd artists tracks", res.tracks), setArtistsThree(res.tracks) })
-    }
-
 
     async function getCurrentUserPlaylist() {
         fetch(base_URL + '/me/playlists', dataParameters)
@@ -104,7 +77,7 @@ const Dashboard = (props) => {
     async function getCurrentUser() {
         fetch(base_URL + '/me', dataParameters)
             .then((res) => res.json())
-            .then((res) => { setName(res?.display_name), storage.set('email', res?.email), storage.set('Name', res?.display_name) })
+            .then((res) => { setName(res?.display_name), storage.set('email', res?.email), storage.set('Name', res?.display_name), storage.set("UserId", res?.id) })
         // .then((res) => { console.log(res), setFirstName(res.display_name.split(' ')[0]), storage.set('email', res.email), storage.set('Name', res.display_name) })
     }
 
@@ -148,14 +121,6 @@ const Dashboard = (props) => {
         // .then((res) => { console.log("party", res?.playlists?.items), setParty(res?.playlists?.items) })
     }
 
-    // chill playlist
-    async function getChill() {
-        fetch(base_URL + '/browse/categories/0JQ5DAqbMKFFzDl7qN9Apr/playlists?limit=10', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setChill(res?.playlists?.items) })
-        // .then((res) => { console.log("Chill", res?.playlists?.items), setChill(res?.playlists?.items) })
-    }
-
     // moody songs playlist
     async function getMood() {
         fetch(base_URL + '/browse/categories/0JQ5DAqbMKFzHmL4tf05da/playlists?limit=10', dataParameters)
@@ -179,7 +144,7 @@ const Dashboard = (props) => {
         )
     }
 
-    // For showing playlists -> Bollywood, Mood, Party, K-Pop, Chill, Workout
+    // For showing playlists -> Bollywood, Mood, Party, K-Pop, Workout
     function DisplayOtherPlaylists({ item }) {
 
         return (
@@ -193,19 +158,23 @@ const Dashboard = (props) => {
         )
     }
 
-    function DisplayFavoriteArtistTracks({ item }) {
+    // For showing Users Top Artists
+    function DisplayArtist({ item }) {
 
         return (
-            <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, coverImage: item?.album?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
-                <View style={[{ backgroundColor: COLORS.MidGreen, justifyContent: 'center' }, styles.imageDisplay]}>
-                    <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : emptyImageUrl) }} style={styles.imageDisplay} />
+            <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, coverImage: item?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
+                <View style={[styles.imageDisplay]}>
+                    <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : item?.albums?.images[0]?.url) }} style={[styles.imageDisplay, { borderRadius: 75 }]} />
                 </View>
-                <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
-                <Text numberOfLines={2}>{DisplayArtistsName({ names: item?.artists })}</Text>
+                <View>
+                    <Text numberOfLines={1} style={[styles.displayName, { color: COLORS.white }]}>{item?.name}</Text>
+                    <Text numberOfLines={1} style={[styles.displayName, { color: COLORS.gray }]}>Artist</Text>
+                </View>
             </TouchableOpacity>
         )
     }
 
+        // For showing Users Top Tracks
     function DisplayFavoriteTracks({ item }) {
 
         return (
@@ -240,17 +209,11 @@ const Dashboard = (props) => {
                 {userplaylists?.length > 0 && (<Text style={styles.header}>Your Playlist</Text>)}
                 {userplaylists?.length > 0 && <FlatList data={userplaylists} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
 
-                {artistsOne?.length > 0 && artists?.length > 0 && (<Text style={styles.header}>Best of <Text style={[styles.header, { ...FONTS.h2 }]}>{artists[0].name}</Text> </Text>)}
-                {artists?.length > 0 && artistsOne?.length > 0 && <FlatList data={artistsOne} renderItem={({ item }) => <DisplayFavoriteArtistTracks item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {artistsTwo?.length > 0 && artists?.length > 0 && (<Text style={styles.header}>Best of <Text style={[styles.header, { ...FONTS.h2 }]}>{artists[1].name}</Text> </Text>)}
-                {artists?.length > 0 && artistsTwo?.length > 0 && <FlatList data={artistsTwo} renderItem={({ item }) => <DisplayFavoriteArtistTracks item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
+                {artists?.length > 0 && (<Text style={styles.header}>Your Top Artists</Text>)}
+                {artists?.length > 0 && <FlatList data={artists} renderItem={({ item }) => <DisplayArtist item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
 
                 {newReleases?.length > 0 && (<Text style={styles.header}>New Music</Text>)}
                 {newReleases?.length > 0 && <FlatList data={newReleases} renderItem={({ item }) => <DisplayNewMusic item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {artistsThree?.length > 0 && artists?.length > 0 && (<Text style={styles.header}>Best of <Text style={[styles.header, { ...FONTS.h2 }]}>{artists[2].name}</Text> </Text>)}
-                {artists?.length > 0 && artistsThree?.length > 0 && <FlatList data={artistsThree} renderItem={({ item }) => <DisplayFavoriteArtistTracks item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
 
                 {bollywood?.length > 0 && (<Text style={styles.header}>Bollywood Masti</Text>)}
                 {bollywood?.length > 0 && <FlatList data={bollywood} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
@@ -263,9 +226,6 @@ const Dashboard = (props) => {
 
                 {mood?.length > 0 && (<Text style={styles.header}>Moody Beats</Text>)}
                 {mood?.length > 0 && <FlatList data={mood} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {chill?.length > 0 && (<Text style={styles.header}>Chillinggg!</Text>)}
-                {chill?.length > 0 && <FlatList data={chill} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
 
                 {party?.length > 0 && (<Text style={styles.header}>Party is in Air</Text>)}
                 {party?.length > 0 && <FlatList data={party} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}

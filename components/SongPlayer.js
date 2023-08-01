@@ -10,10 +10,10 @@ import LinearGradient from 'react-native-linear-gradient'
 const SongPlayer = () => {
     const { currentTrack, isPlaying, setIsPlaying, currentSong, isLoading, setIsPlayerVisible, isPlayerVisible, playlistName, playlist, currentIndex, setCurrentIndex, setCurrentTrack, setCurrentSong, setIsLoading } = useContext(Player)
 
-    console.log("current index", currentIndex)
+    // console.log("current index", currentIndex)
     let nextSong = currentTrack
-    console.log("playlist", playlist)
-    console.log("playlist length", playlist.length)
+    // console.log("playlist", playlist)
+    // console.log("playlist length", playlist.length)
 
     async function changeStatus() {
         // console.log("current song", currentTrack)
@@ -31,7 +31,7 @@ const SongPlayer = () => {
         setIsLoading(true)
         nextSong = item
         setCurrentTrack(item)
-        console.log("next song playing", item)
+        // console.log("next song playing", item)
 
         await currentSong?.stopAsync()
         let song_url = item?.preview_url
@@ -54,6 +54,7 @@ const SongPlayer = () => {
             await sound?.playAsync()
         } catch (error) {
             setIsLoading(false)
+            setIsPlayerVisible(false)
             if (error.message === "Cannot load an AV asset from a null playback source") {
                 ToastAndroid.show("Free Preview Not Available", 3000)
             }
@@ -63,7 +64,7 @@ const SongPlayer = () => {
 
     function AudioPlayer() {
         return (
-            (isLoading ? <View style={styles.player}><LinearGradient style={{ flex: 1, justifyContent:'center' }} colors={['#2dbfc2', '#0b0d70', '#000008']}><ActivityIndicator color={COLORS.green} size={75} /></LinearGradient></View> : (<View style={styles.player}>
+            (isLoading ? <View style={styles.player}><LinearGradient style={{ flex: 1, justifyContent: 'center' }} colors={['#2dbfc2', '#0b0d70', '#000008']}><ActivityIndicator color={COLORS.green} size={75} /></LinearGradient></View> : (<View style={styles.player}>
                 <LinearGradient style={{ flex: 1 }} colors={['#2dbfc2', '#0b0d70', '#000008']} >
 
 

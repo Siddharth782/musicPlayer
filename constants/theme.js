@@ -1,6 +1,6 @@
 export const COLORS = {
-    voilet: "rgb(34,0,70)",
-    lighterVoilet: "rgba(34,0,70,0.8)",
+    violet: "#694fad",
+    lighterviolet: "rgba(34,0,70,0.8)",
     pink: "#e10092",
     lightPink: '#fcbdbd',
     white: "#ffffff",
@@ -20,10 +20,8 @@ export const COLORS = {
     darkGreen: "#27AE60",
     black: "black",
     darkerGrey: '#526D82',
-    transparentViolet: 'rgba(34,0,70,0.1)',
     bg_tile_Colo: '#F5EEF8',
     lightYellow: '#fff494',
-    transparentVoilet: 'rgba(34, 0, 70, 0.1)',
     purple: '#9376E0',
     lightOrange: '#F79540',
     leafGreen: 'rgba(87, 153, 12, 1)',
@@ -43,7 +41,7 @@ export const COLORS = {
     transparentBlack7: 'rgba(0, 0, 0, 0.7)',
     transparentGray: 'rgba(150, 150, 150, 0.3)',
     transparentRed: 'rgba(255,0,0, 0.1)',
-    transparentVoilet: 'rgba(3, 161, 87, 0.1)',
+    transparentviolet: 'rgba(3, 161, 87, 0.1)',
 };
 
 export const SIZES = {
