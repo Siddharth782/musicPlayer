@@ -8,8 +8,11 @@ import { Player } from '../../components/CurrentStatus'
 import { DisplayArtistsName } from '../../components/DisplayArtistName'
 import Loader from '../../components/Loader'
 import BottomUpModal from '../../components/BottomUpModal'
+import { useIsFocused } from '@react-navigation/native';
 
 const Details = (props) => {
+
+    const isFocused = useIsFocused();
 
     const { id, description, coverImage, name, type } = props.route.params
     const [accessToken, setAccessToken] = useState(storage.getString('accessToken'))
@@ -18,6 +21,7 @@ const Details = (props) => {
     const [tracks, setTracks] = useState([])
     const [artistTracks, setArtistTracks] = useState([])
     const [artistAlbums, setArtistAlbums] = useState([])
+    const [playlistDetails, setPlaylistDetails] = useState(null)
     const [track, setTrack] = useState(null)
     const [loaderVisible, setLoaderVisible] = useState(true)
     const [modalVisible, setModalVisible] = useState(false)
@@ -26,6 +30,8 @@ const Details = (props) => {
 
     const { currentSong, setCurrentSong, setCurrentTrack, currentTrack, setIsPlaying, setIsLoading, setPlaylistName, setPlaylist, setCurrentIndex, playlist } = useContext(Player)
     setPlaylistName(name)
+
+
     let dataParameters = {
         method: 'GET',
         headers: {
@@ -36,25 +42,45 @@ const Details = (props) => {
 
     useEffect(() => {
         name === "Favorite" && tracks.length === 0 && getSavedTracks()
-        type === "playlist" && tracks.length === 0 && getPlaylistTracks()
+        // type === "playlist" && getPlaylistTracks()
         type === "album" && tracks.length === 0 && getAlbumTracks()
         type === "track" && track?.length === 0 && getSingleTrack()
         type === "artist" && tracks.length === 0 && getArtistsTracks()
     }, [])
 
+    useEffect(() => {
+        // console.log("Focused: ", isFocused); //called whenever isFocused changes
+        type === "playlist" && getPlaylistTracks()
+        type === "playlist" && getPlaylist()
+    }, [isFocused]);
+
+    // get tracks of a given playlist
     function getPlaylistTracks() {
 
         try {
             fetch(`https://api.spotify.com/v1/playlists/${id}/tracks`, dataParameters)
                 .then((res) => res.json())
-                .then((res) => { setTracks(res?.items), setPlaylist(res?.items), setLoaderVisible(false), setTotalTracks(res?.items?.length), console.log("playlist", res) })
-            // .then((res) => {console.log("track response album",res?.items[0].track.album), console.log("track response artist",res?.items[0].track.artists)})
+                .then((res) => { setTracks(res?.items), setPlaylist(res?.items), setLoaderVisible(false), setTotalTracks(res?.items?.length) })
         } catch (error) {
             ToastAndroid.show(error.message, 3000)
         }
 
     }
 
+    // get tracks of a given playlist
+    function getPlaylist() {
+
+        try {
+            fetch(`https://api.spotify.com/v1/playlists/${id}`, dataParameters)
+                .then((res) => res.json())
+                .then((res) => { setPlaylistDetails(res) })
+        } catch (error) {
+            ToastAndroid.show(error.message, 3000)
+        }
+
+    }
+
+    // this is used for getting the user favorite tracks
     function getSavedTracks() {
 
         try {
@@ -68,6 +94,7 @@ const Details = (props) => {
 
     }
 
+    // this is used for getting tracks of selected artist
     function getArtistsTracks() {
 
         try {
@@ -84,6 +111,7 @@ const Details = (props) => {
 
     }
 
+    // when only 1 track is selected
     function getSingleTrack() {
         try {
             fetch(`https://api.spotify.com/v1/tracks/${id}`, dataParameters)
@@ -95,6 +123,7 @@ const Details = (props) => {
         }
     }
 
+    // tracks of an album when an album is selected
     function getAlbumTracks() {
         try {
             fetch(`https://api.spotify.com/v1/albums/${id}/tracks`, dataParameters)
@@ -107,7 +136,7 @@ const Details = (props) => {
 
     }
 
-    // for rendering header
+    // for rendering header at top of page
     function renderHeader() {
         return (
             <View style={styles.header}>
@@ -117,13 +146,16 @@ const Details = (props) => {
         )
     }
 
+    // for playing selected track
     async function playTrack({ item, id }) {
         // console.log("song index", id)
         setCurrentTrack(item)
         setCurrentIndex(id)
         setIsLoading(true)
 
+        // stop the playing song
         await currentSong?.stopAsync()
+
         let song_url = item?.preview_url
         try {
 
@@ -152,6 +184,7 @@ const Details = (props) => {
     }
 
 
+    // display all the tracks
     function DisplayTracks({ item, id }) {
         // setLoaderVisible(false)
         return (
@@ -166,14 +199,40 @@ const Details = (props) => {
                         {item?.type === "album" && <Text numberOfLines={1}>Album ∙ {DisplayArtistsName({ names: item?.artists })}</Text>}
                         {item?.type === "playlist" && <Text numberOfLines={1}>Playlist ∙ {DisplayArtistsName({ names: item?.artists })}</Text>}
                     </View>
-                    {item?.type === "track" && <TouchableOpacity style={{ paddingHorizontal: 5 }} onPress={() => { setSelectedSong(item), setModalVisible(true) }} >
+                    {item?.type === "track" && (<TouchableOpacity style={{ paddingHorizontal: 5, marginHorizontal: 5 }} onPress={() => { setSelectedSong(item), setModalVisible(true) }} >
                         <Icon size={20} name="dots-vertical" color={COLORS.white} />
-                    </TouchableOpacity>}
+                    </TouchableOpacity>)}
                 </View>
             </TouchableOpacity>
         )
     }
 
+    async function addToLikedSongs({ songUri }) {
+
+        // console.log("song "+songUri)
+
+        let addParameters = {
+            method: 'GET',
+            headers: {
+                // "Content-Type": 'application/json',
+                "Authorization": 'Bearer ' + accessToken
+            }
+        }
+
+        try {
+
+            let addToLiked = await fetch(`https://api.spotify.com/v1/me/tracks`, addParameters)
+            addToLiked = await addToLiked.json()
+            console.log("saved tracks response",addToLiked)
+            // ToastAndroid.show("Song Added to Liked Songs", 3000)
+
+        } catch (error) {
+            console.log(error)
+        }
+
+    }
+
+    // for rendering options box
     function renderOptions() {
         let item = selectedSong
 
@@ -181,12 +240,12 @@ const Details = (props) => {
             <View style={{ padding: 5, margin: 5, flex: 1 }}>
                 <View style={{ justifyContent: 'center', alignItems: 'center' }}>
                     <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : item?.images?.[0].url) }} style={styles.displayImage} />
-                    <Text numberOfLines={1} style={{marginVertical:3, ...FONTS.h2, color: COLORS.white }}>{item?.name}</Text>
-                    <Text numberOfLines={1} style={{marginVertical:3, ...FONTS.h4 }}>{DisplayArtistsName({ names: item?.artists })}</Text>
+                    <Text numberOfLines={1} style={{ marginVertical: 3, ...FONTS.h2, color: COLORS.white }}>{item?.name}</Text>
+                    <Text numberOfLines={1} style={{ marginVertical: 3, ...FONTS.h4 }}>{DisplayArtistsName({ names: item?.artists })}</Text>
                 </View>
 
                 <View>
-                    <TouchableOpacity style={styles.Options}>
+                    <TouchableOpacity style={styles.Options} onPress={() => addToLikedSongs({ songUri: item?.id })}>
                         <Icon name="cards-heart-outline" size={20} color={COLORS.white} />
                         <Text style={{ color: COLORS.white, marginHorizontal: 10, fontSize: 18 }}>
                             Like
@@ -212,19 +271,48 @@ const Details = (props) => {
         )
     }
 
+    // displaying when no track is present in a track
+    function renderNoTracks() {
+
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ ...FONTS.h4 }}>Your playlist is empty.</Text>
+                <TouchableOpacity onPress={() => props.navigation.navigate("AddSong", { playListId: id })} style={{ backgroundColor: COLORS.white, borderRadius: SIZES.radius * 2, justifyContent: 'center', alignItems: 'center', padding: 10, marginVertical: 10 }}>
+                    <Text style={{ ...FONTS.h2, color: COLORS.black, }}>Add Songs</Text>
+                </TouchableOpacity>
+            </View>
+        )
+    }
+
     return (
         <ScrollView style={{ backgroundColor: COLORS.black, flex: 1 }} showsVerticalScrollIndicator={false}>
             {renderHeader()}
 
-            <Text style={{ marginHorizontal: 15, ...FONTS.h2, color: 'white' }}>{name}</Text>
-            <Text style={{ marginHorizontal: 15 }}>{description}</Text>
-            {totalTracks && <View style={{ alignItems: 'center', margin: 15, flexDirection: 'row', justifyContent: 'space-between' }}>
-                {totalTracks && <Text style={{ ...FONTS.h3, color: COLORS.white }} > {totalTracks} tracks</Text>}
-                <Icon name="play" style={{ borderRadius: 20, backgroundColor: COLORS.MidGreen }} onPress={() => playTrack({ item: playlist?.[0]?.track, id: 0 })} size={40} />
-            </View>}
+            {/* displaying name of track/album/playlist */}
+            <Text style={{ marginLeft: 15, ...FONTS.h2, color: 'white' }}>{name}</Text>
 
-            <View style={{ marginHorizontal: 15, marginTop: 10, marginBottom: (currentTrack ? 58 : 18) }}>
+            {/* displaying description of track/album/playlist */}
+            <Text numberOfLines={2} style={{ marginLeft: 20 }}>{playlistDetails?.description}</Text>
+
+            {/* displaying playlist details */}
+            {playlistDetails !== null && (
+                <Text style={{ marginLeft: 20, marginVertical: 8, color: COLORS.white }}>{playlistDetails?.owner?.display_name}</Text>
+            )}
+
+            {totalTracks !== null &&
+                (<View style={{ alignItems: 'center', marginHorizontal: 15, flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Text style={{ ...FONTS.h3, color: COLORS.white }} > {totalTracks} tracks</Text>
+                    <Icon name="play" style={{ borderRadius: 20, backgroundColor: COLORS.green }} onPress={() => playTrack({ item: playlist?.[0]?.track, id: 0 })} size={40} />
+                </View>)
+            }
+
+            <View style={{ marginLeft: 15, marginTop: 10, marginBottom: (currentTrack ? 58 : 18) }}>
                 <Loader loaderVisible={loaderVisible} />
+                {tracks?.length > 0 && <TouchableOpacity onPress={() => props.navigation.navigate("AddSong", { playListId: id })} style={{ width: '40%', alignSelf: 'center', backgroundColor: COLORS.black, borderRadius: SIZES.radius * 2, justifyContent: 'center', alignItems: 'center', padding: 5, marginVertical: 5, borderWidth: 2, borderColor: COLORS.white }}>
+                    <Text style={{ color: COLORS.white }}>Add Songs</Text>
+                </TouchableOpacity>}
+
+                {type === "playlist" && totalTracks === 0 && renderNoTracks()}
                 {type === "playlist" && tracks?.length > 0 && tracks.map((item, index) => <DisplayTracks item={item.track} key={index} id={index} />)}
                 {type === "album" && tracks?.length > 0 && tracks.map((item, index) => <DisplayTracks item={item} key={index} id={index} />)}
                 {type === "track" && track && <DisplayTracks item={track} id={0} />}
@@ -261,9 +349,9 @@ const styles = StyleSheet.create({
         borderRadius: SIZES.radius
     },
     Options: {
-        flexDirection: 'row', 
-        alignItems: 'center', 
+        flexDirection: 'row',
+        alignItems: 'center',
         marginHorizontal: 10,
-        marginVertical:5
+        marginVertical: 5
     }
 })

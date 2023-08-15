@@ -13,12 +13,12 @@ const AddPlaylist = (props) => {
     const [loaderVisible, setLoaderVisible] = useState(false)
 
     let userId = storage.getString("UserId")
-    console.log(userId)
+    
     // for rendering header
     const renderHeader = () => {
         return (
             <View style={styles.header}>
-                <Icon name='arrow-left-thin' onPress={() => props.navigation.goBack()} style={{ position: 'absolute', left: 10, top: 9, zIndex: 1, backgroundColor: 'black', borderRadius: 16 }} color={'white'} size={32} />
+                <Icon name='arrow-left-thin' onPress={() => props.navigation.goBack()} style={{ position: 'absolute', left: 10 }} color={'white'} size={32} />
                 <Text style={{ color: 'white', fontSize: 20 }}>Create your own Playlist</Text>
             </View>
         )
@@ -37,15 +37,22 @@ const AddPlaylist = (props) => {
         })
     }
 
-    function createPlaylist() {
+    async function createPlaylist() {
         setLoaderVisible(true)
         try {
-            fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, dataParameters)
-                .then((res) => res.json())
-                .then((res) => { console.log("playlist ", res), setLoaderVisible(false) })
-        } catch (error) {
+            let newPlaylist = await fetch(`https://api.spotify.com/v1/users/${userId}/playlists`, dataParameters)
+            newPlaylist = await newPlaylist.json()
 
+            if (newPlaylist?.snapshot_id) {
+                ToastAndroid.show("New Playlist is created", 3000)
+                props.navigation.goBack()
+            }
+
+        } catch (error) {
+            ToastAndroid.show("Error while creating playlist. Try again later", 3000)
         }
+        setLoaderVisible(false)
+
     }
 
     return (

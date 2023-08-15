@@ -61,7 +61,6 @@ const AddtoPlaylist = (props) => {
             }
             else {
                 ToastAndroid.show("Please Try again", 3000)
-
             }
             setLoaderVisible(false)
 
@@ -92,8 +91,8 @@ const AddtoPlaylist = (props) => {
     const renderHeader = () => {
         return (
             <View style={styles.header}>
-                <Icon name='arrow-left-thin' onPress={() => props.navigation.goBack()} style={{ position: 'absolute', left: 10, top: 15, zIndex: 1, backgroundColor: 'black', borderRadius: 16 }} color={'white'} size={32} />
-                <Text style={styles.header}>Add To a Playlist</Text>
+                <Icon name='arrow-left-thin' onPress={() => props.navigation.goBack()} style={{ position: 'absolute', left: 10 }} color={'white'} size={32} />
+                <Text style={{ color: 'white', fontSize: 20 }}>Add To a Playlist</Text>
             </View>
         )
     }

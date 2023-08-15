@@ -36,7 +36,7 @@ const Welcome = (props) => {
     async function authentication() {
 
 
-        const request = await WebBrowser.openAuthSessionAsync(`https://accounts.spotify.com/authorize?redirect_uri=app://open.my.app&response_type=token&client_id=be5a81d256794fdaa0fd2c789c428720&response_token=token&show_dialog=true&scope=user-read-private, user-read-email, user-library-read,user-read-recently-played,user-top-read,playlist-read-private,playlist-read-collaborative,playlist-modify-public,playlist-modify-private`, "app://open.my.app")
+        const request = await WebBrowser.openAuthSessionAsync(`https://accounts.spotify.com/authorize?redirect_uri=app://open.my.app&response_type=token&client_id=be5a81d256794fdaa0fd2c789c428720&response_token=token&show_dialog=true&scope=user-read-private,user-library-modify, user-read-email, user-library-read,user-read-recently-played,user-top-read,playlist-read-private,playlist-read-collaborative,playlist-modify-public,playlist-modify-private`, "app://open.my.app")
         console.log(request)
         if (request.url?.split("?")[1] === "error=access_denied") {
             console.log("Hello")

@@ -7,6 +7,7 @@ import Details from '../../screens/songsArea/Details';
 import AboutUs from '../../screens/SettingScreens/AboutUs';
 import Settings from '../../screens/songsArea/Settings';
 import AddtoPlaylist from '../../screens/songsArea/AddtoPlaylist';
+import AddSong from '../../screens/songsArea/AddSong';
 
 const EntryStackNav = () => {
     return (
@@ -15,6 +16,7 @@ const EntryStackNav = () => {
             <Stack.Screen options={{ gestureEnabled: false, headerShown: false, headerLeft: () => <></>, }} name="MusicArea" component={SongsTabNav} />
             <Stack.Screen options={{ gestureEnabled: false, headerShown: false, headerLeft: () => <></>, }} name="Details" component={Details} />
             <Stack.Screen options={{ gestureEnabled: false, headerShown: false, headerLeft: () => <></>, }} name="AddtoPlaylist" component={AddtoPlaylist} />
+            <Stack.Screen options={{ gestureEnabled: false, headerShown: false, headerLeft: () => <></>, }} name="AddSong" component={AddSong} />
             <Stack.Screen options={{ gestureEnabled: false, headerShown: false, headerLeft: () => <></>, }} name="Settings" component={Settings} />
             <Stack.Screen options={{ gestureEnabled: false, headerShown: false, headerLeft: () => <></>, }} name="AboutUs" component={AboutUs} />
         </Stack.Navigator>

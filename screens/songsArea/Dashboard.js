@@ -6,8 +6,11 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import { DisplayArtistsName } from '../../components/DisplayArtistName'
 import Loader from '../../components/Loader'
 const base_URL = 'https://api.spotify.com/v1'
+import { useIsFocused } from '@react-navigation/native';
 
 const Dashboard = (props) => {
+
+    const isFocused = useIsFocused();
 
     // for getting access token
     const [accessToken, setAccessToken] = useState(storage.getString('accessToken'))
@@ -40,7 +43,6 @@ const Dashboard = (props) => {
     // fetching songs thru API
     useEffect(() => {
         !name && getCurrentUser()
-        userplaylists.length === 0 && getCurrentUserPlaylist()
         TopTracks.length === 0 && getCurrentUserTopTracks()
         artists.length === 0 && getCurrentUserTopArtists()
         newReleases.length === 0 && getNewReleases()
@@ -51,10 +53,13 @@ const Dashboard = (props) => {
         party.length === 0 && getParty()
     }, [])
 
-
+    useEffect(() => {
+        // console.log("Focused: ", isFocused); //called whenever isFocused changes
+        getCurrentUserPlaylist()
+    }, [isFocused]);
 
     async function getCurrentUserTopTracks() {
-        fetch(base_URL + '/me/top/tracks?limit=10', dataParameters)
+        fetch(base_URL + '/me/top/tracks?limit=20', dataParameters)
             .then((res) => res.json())
             .then((res) => { setTopTracks(res.items), setLoaderVisible(false) })
         // .then((res) => { console.log("top tracks", res.items), setTopTracks(res.items) })
@@ -174,7 +179,7 @@ const Dashboard = (props) => {
         )
     }
 
-        // For showing Users Top Tracks
+    // For showing Users Top Tracks
     function DisplayFavoriteTracks({ item }) {
 
         return (
