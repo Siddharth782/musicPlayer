@@ -1,0 +1,68 @@
+export const COLORS = {
+    violet: "#694fad",
+    lighterviolet: "rgba(34,0,70,0.8)",
+    pink: "#e10092",
+    lightPink: '#fcbdbd',
+    white: "#ffffff",
+    green: "#03a157",
+    disableGreen: 'rgba(93, 176, 97,0.1)',
+    disableRed: 'rgb(222, 111, 109)',
+    darkRed: "#960202",
+    orange: "#ec672f",
+    lightGray: '#e6e1e1',
+    lightRed: '#FDEDEC',
+    gray: "gray",
+    skyBlue: "#87CEEB",
+    lightBlue: '#5DADE2',
+    lightGreen: "#D5F5E3",
+    red: "#E74C3C",
+    MidGreen: "#28B463",
+    darkGreen: "#27AE60",
+    black: "black",
+    darkerGrey: '#526D82',
+    bg_tile_Colo: '#F5EEF8',
+    lightYellow: '#fff494',
+    purple: '#9376E0',
+    lightOrange: '#F79540',
+    leafGreen: 'rgba(87, 153, 12, 1)',
+    orange1: 'rgb(255,102,0)',
+    disableOrange1: 'rgba(255,102,0, 0.1)',
+    gray: 'gray',
+    skyBlue: '#87CEEB',
+    lightGreen: '#88C385',
+    black: 'black',
+    darkGray: '#838383',
+    darkGray2: 'rgba(105, 104, 104, 1)',
+    lightGray: 'rgba(105, 104, 104, 0.3)',
+    levender: 'rgba(198, 203, 239, 1)',
+
+    transparent: 'transparent',
+    transparentBlack1: 'rgba(0, 0, 0, 0.1)',
+    transparentBlack7: 'rgba(0, 0, 0, 0.7)',
+    transparentGray: 'rgba(150, 150, 150, 0.3)',
+    transparentRed: 'rgba(255,0,0, 0.1)',
+    transparentviolet: 'rgba(3, 161, 87, 0.1)',
+};
+
+export const SIZES = {
+    // global sizes
+    base: 8,
+    font: 14,
+    radius: 12,
+    padding: 24,
+
+    // font sizes
+    h1: 30,
+    h2: 22,
+    h3: 16,
+    h4: 14,
+    h5: 12,
+};
+
+export const FONTS = {
+    h1: { fontSize: SIZES.h1, },
+    h2: { fontSize: SIZES.h2, },
+    h3: { fontSize: SIZES.h3, fontWeight: '600' },
+    h4: { fontSize: SIZES.h4, fontWeight: '500' },
+    h5: { fontSize: SIZES.h5, fontWeight: '400' },
+} 
