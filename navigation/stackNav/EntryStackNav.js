@@ -21,7 +21,7 @@ const EntryStackNav = () => {
     }
 
     return (
-        
+
         <Stack.Navigator screenOptions={{ headerShown: false, animation: isAuthenticated ? 'default' : 'none' }}>
             {isAuthenticated ? (
                 <>
