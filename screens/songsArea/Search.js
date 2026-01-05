@@ -3,17 +3,15 @@ import React, { useState, useContext } from 'react'
 import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import Loader from '../../components/Loader'
-import { storage } from '../../store/store'
 import { DisplayArtistsName } from '../../components/DisplayArtistName'
 import { PlayerContext } from '../../context/PlayerContext'
 import { Audio } from 'expo-av'
 import { API_BASE_URL } from '../../config/config'
-
+import { AuthContext } from '../../context/AuthContext';
 const BASE_URL = API_BASE_URL
 
 const Search = (props) => {
-    // getting access Token from storage
-    let accessToken = storage.getString("accessToken")
+    const { getAccessToken } = useContext(AuthContext);
 
     const { currentSound, setCurrentSound, setCurrentTrack, currentTrack, setIsPlaying, setIsLoading } = useContext(PlayerContext)
 
@@ -36,19 +34,19 @@ const Search = (props) => {
         setAllPlaylist([])
 
         // parameters for passing to backend 
-        let searchParameters = {
+        const getParamConfig = () => ({
             method: 'GET',
             headers: {
                 "Content-Type": 'application/json',
-                "Authorization": 'Bearer ' + accessToken
+                "Authorization": `Bearer ${getAccessToken()}`
             }
-        }
+        });
 
         try {
 
-            let resTracks = await fetch(`${BASE_URL}/search?q=${searchValue}&type=track&limit=10`, searchParameters)
-            let res = await fetch(`${BASE_URL}/search?q=${searchValue}&type=album%2Cplaylist&limit=5`, searchParameters)
-            let resArtist = await fetch(`${BASE_URL}/search?q=${searchValue}&type=artist&limit=5`, searchParameters)
+            let resTracks = await fetch(`${BASE_URL}/search?q=${searchValue}&type=track&limit=10`, getParamConfig())
+            let res = await fetch(`${BASE_URL}/search?q=${searchValue}&type=album%2Cplaylist&limit=5`, getParamConfig())
+            let resArtist = await fetch(`${BASE_URL}/search?q=${searchValue}&type=artist&limit=5`, getParamConfig())
             res = await res?.json()
             resTracks = await resTracks?.json()
             resArtist = await resArtist?.json()

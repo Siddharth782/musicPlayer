@@ -1,45 +1,36 @@
 import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView, ToastAndroid, Modal } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useContext } from 'react'
 import { storage } from '../../store/store'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import Loader from '../../components/Loader'
 import { API_BASE_URL } from '../../config/config'
+import { AuthContext } from '../../context/AuthContext';
 const BASE_URL = API_BASE_URL
 
 const AddtoPlaylist = (props) => {
     const { trackURI } = props.route.params
 
-    const [accessToken, setAccessToken] = useState(storage.getString('accessToken'))
+    const { getAccessToken } = useContext(AuthContext);
+
     const [loaderVisible, setLoaderVisible] = useState(true)
     const [userplaylists, setUserPlaylists] = useState([])
-
-    let playlistParameters = {
-        method: 'GET',
-        headers: {
-            "Content-Type": 'application/json',
-            "Authorization": 'Bearer ' + accessToken
-        }
-    }
-
-    let addParameters = {
-        method: 'POST',
-        headers: {
-            "Content-Type": 'application/json',
-            "Authorization": 'Bearer ' + accessToken
-        },
-        body: JSON.stringify({
-            uris: [trackURI]
-        })
-    }
 
     useEffect(() => {
         getCurrentUserPlaylist()
     }, [])
 
+    const getParamConfig = () => ({
+        method: 'GET',
+        headers: {
+            "Content-Type": 'application/json',
+            "Authorization": `Bearer ${getAccessToken()}`
+        }
+    });
+
     function getCurrentUserPlaylist() {
         try {
-            fetch(BASE_URL + '/me/playlists?limit=50', playlistParameters)
+            fetch(BASE_URL + '/me/playlists?limit=50', getParamConfig())
                 .then((res) => res.json())
                 .then((res) => { setUserPlaylists(res?.items), setLoaderVisible(false) })
         } catch (error) {
@@ -49,8 +40,19 @@ const AddtoPlaylist = (props) => {
 
     async function addToPlaylist({ playlistId }) {
         // console.log("playlist id", playlistId)
+        let accessToken = getAccessToken();
 
         try {
+            let addParameters = {
+                method: 'POST',
+                headers: {
+                    "Content-Type": 'application/json',
+                    "Authorization": 'Bearer ' + accessToken
+                },
+                body: JSON.stringify({
+                    uris: [trackURI]
+                })
+            }
 
             setLoaderVisible(true)
             let res = await fetch(`${BASE_URL}/playlists/${playlistId}/tracks`, addParameters)

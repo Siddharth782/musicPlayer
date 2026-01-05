@@ -7,13 +7,14 @@ import { DisplayArtistsName } from '../../components/DisplayArtistName'
 import { PlayerContext } from '../../context/PlayerContext'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import { API_BASE_URL } from '../../config/config'
+import { AuthContext } from '../../context/AuthContext';
 
 const BASE_URL = API_BASE_URL
 
 const Library = (props) => {
 
     // for getting access token
-    const [accessToken, setAccessToken] = useState(storage.getString('accessToken'))
+    const { getAccessToken } = useContext(AuthContext);
     const { currentTrack } = useContext(PlayerContext)
 
     let emptyImageUrl = 'https://www.google.com/imgres?imgurl=https%3A%2F%2Fe7.pngegg.com%2Fpngimages%2F88%2F561%2Fpng-clipart-yellow-bottom-black-note-icon-music-player-music-player-interface.png&tbnid=qOlEHu-HU7dRxM&vet=12ahUKEwiMvIrI-K6AAxUp3DgGHVOkDm8QMyg-egUIARCGAQ..i&imgrefurl=https%3A%2F%2Fwww.pngegg.com%2Fen%2Fpng-dkvzj&docid=ngZOdOtUS1NxdM&w=900&h=908&q=music%20player%20symbols&ved=2ahUKEwiMvIrI-K6AAxUp3DgGHVOkDm8QMyg-egUIARCGAQ'
@@ -27,13 +28,13 @@ const Library = (props) => {
     const [loaderVisible, setLoaderVisible] = useState(true)
 
     // parameters to be passed while getting songs
-    let dataParameters = {
+    const getParamConfig = () => ({
         method: 'GET',
         headers: {
             "Content-Type": 'application/json',
-            "Authorization": 'Bearer ' + accessToken
+            "Authorization": `Bearer ${getAccessToken()}`
         }
-    }
+    });
 
     // fetching songs thru API
     useEffect(() => {
@@ -44,21 +45,21 @@ const Library = (props) => {
     }, [])
 
     async function getCurrentUserPlaylist() {
-        fetch(BASE_URL + '/me/playlists?limit=50', dataParameters)
+        fetch(BASE_URL + '/me/playlists?limit=50', getParamConfig())
             .then((res) => res.json())
             .then((res) => { setUserPlaylists(res?.items) })
         // .then((res) => { console.log("user Playlist", res?.items[1]), setUserPlaylists(res?.items) })
     }
 
     async function getCurrentUserAlbums() {
-        fetch(BASE_URL + '/me/albums?limit=50', dataParameters)
+        fetch(BASE_URL + '/me/albums?limit=50', getParamConfig())
             .then((res) => res.json())
             .then((res) => { setUserAlbums(res?.items) })
         // .then((res) => { console.log("user Playlist", res?.items[1]), setUserPlaylists(res?.items) })
     }
 
     async function getCurrentUserTopArtists() {
-        fetch(BASE_URL + '/me/top/artists?limit=10', dataParameters)
+        fetch(BASE_URL + '/me/top/artists?limit=10', getParamConfig())
             .then((res) => res.json())
             .then((res) => { setArtists(res?.items), setLoaderVisible(false) })
         // .then((res) => { console.log("top artists", res?.items), getTopArtistsTracks(res?.items), setArtists(res?.items) })
@@ -66,7 +67,7 @@ const Library = (props) => {
 
 
     async function getCurrentUser() {
-        fetch(BASE_URL + '/me', dataParameters)
+        fetch(BASE_URL + '/me', getParamConfig())
             .then((res) => res.json())
             .then((res) => { setUser(res) })
         // .then((res) => { console.log(res), setFirstName(res.display_name.split(' ')[0]), storage.set('email', res.email), storage.set('Name', res.display_name) })

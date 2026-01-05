@@ -1,21 +1,23 @@
 import { StyleSheet, Text, View, ScrollView, Image, TouchableOpacity, ToastAndroid, TextInput } from 'react-native'
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { storage } from '../../store/store'
 import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import Loader from '../../components/Loader'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import { API_BASE_URL } from '../../config/config'
+import { AuthContext } from '../../context/AuthContext';
+
 const BASE_URL = API_BASE_URL
 
 const AddPlaylist = (props) => {
 
-    const [accessToken, setAccessToken] = useState(storage.getString("accessToken"))
+    const { getAccessToken } = useContext(AuthContext);
     const [playlistName, setPlaylistName] = useState('')
     const [playlistDescription, setPlaylistDescription] = useState('')
     const [loaderVisible, setLoaderVisible] = useState(false)
 
     let userId = storage.getString("UserId")
-    
+
     // for rendering header
     const renderHeader = () => {
         return (
@@ -26,22 +28,22 @@ const AddPlaylist = (props) => {
         )
     }
 
-    // parameters to be passed while creating playlist
-    let dataParameters = {
-        method: 'POST',
-        headers: {
-            "Content-Type": 'application/json',
-            "Authorization": 'Bearer ' + accessToken
-        },
-        body: JSON.stringify({
-            name: playlistName,
-            description: playlistDescription
-        })
-    }
-
     async function createPlaylist() {
+        let accessToken = getAccessToken();
         setLoaderVisible(true)
+
         try {
+            let dataParameters = {
+                method: 'POST',
+                headers: {
+                    "Content-Type": 'application/json',
+                    "Authorization": 'Bearer ' + accessToken
+                },
+                body: JSON.stringify({
+                    name: playlistName,
+                    description: playlistDescription
+                })
+            };
             let newPlaylist = await fetch(`${BASE_URL}/users/${userId}/playlists`, dataParameters)
             newPlaylist = await newPlaylist.json()
 

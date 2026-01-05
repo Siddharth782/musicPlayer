@@ -1,22 +1,22 @@
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, Image, ScrollView, ToastAndroid } from 'react-native'
-import React, { useState, useEffect } from 'react'
-import { storage } from '../../store/store'
+import React, { useState, useEffect, useContext } from 'react'
 import Loader from '../../components/Loader'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import { COLORS, SIZES, FONTS } from '../../constants/theme'
 import { DisplayArtistsName } from '../../components/DisplayArtistName'
 import { API_BASE_URL } from '../../config/config'
+import { AuthContext } from '../../context/AuthContext';
+
 const BASE_URL = API_BASE_URL;
 
 const AddSong = (props) => {
     const { playListId } = props?.route?.params
 
-
+    const { getAccessToken } = useContext(AuthContext);
     const [allTracks, setAllTracks] = useState([])
     const [recentlyPlayed, setRecentlyPlayed] = useState(null)
     const [recommendations, setRecommendations] = useState(null)
     const [loaderVisible, setLoaderVisible] = useState(true)
-    const [accessToken, setAccessToken] = useState(storage.getString('accessToken'))
     const [searchValue, setSearchValue] = useState('')
 
     useEffect(() => {
@@ -24,18 +24,19 @@ const AddSong = (props) => {
         !recentlyPlayed && getRecentlyPlayed()
     }, [])
 
-    let dataParameters = {
+    const getParamConfig = () => ({
         method: 'GET',
         headers: {
             "Content-Type": 'application/json',
-            "Authorization": 'Bearer ' + accessToken
+            "Authorization": `Bearer ${getAccessToken()}`
         }
-    }
+    });
 
     // when only 1 track is selected
     function getRecommendations() {
+
         try {
-            fetch(`${BASE_URL}/recommendations?seed_genres=rock,mood,workout`, dataParameters)
+            fetch(`${BASE_URL}/recommendations?seed_genres=rock,mood,workout`, getParamConfig())
                 .then((res) => res.json())
                 .then((res) => { setLoaderVisible(false), setRecommendations(res?.tracks) })
         } catch (error) {
@@ -46,7 +47,7 @@ const AddSong = (props) => {
     // when only 1 track is selected
     function getRecentlyPlayed() {
         try {
-            fetch(`${BASE_URL}/me/player/recently-played`, dataParameters)
+            fetch(`${BASE_URL}/me/player/recently-played`, getParamConfig())
                 .then((res) => res.json())
                 .then((res) => { setLoaderVisible(false), setRecentlyPlayed(res?.items) })
         } catch (error) {
@@ -60,18 +61,8 @@ const AddSong = (props) => {
         setLoaderVisible(true)
         setAllTracks([])
 
-        // parameters for passing to backend 
-        let searchParameters = {
-            method: 'GET',
-            headers: {
-                "Content-Type": 'application/json',
-                "Authorization": 'Bearer ' + accessToken
-            }
-        }
-
         try {
-
-            let resTracks = await fetch(`${BASE_URL}/search?q=${searchValue}&type=track&limit=10`, searchParameters)
+            let resTracks = await fetch(`${BASE_URL}/search?q=${searchValue}&type=track&limit=10`, getParamConfig())
             resTracks = await resTracks?.json()
 
             setAllTracks(resTracks?.tracks?.items)
@@ -86,20 +77,8 @@ const AddSong = (props) => {
 
     async function addTrackToPlaylist({ songUri }) {
 
-        let addingParameters = {
-            method: 'POST',
-            headers: {
-                "Content-Type": 'application/json',
-                "Authorization": 'Bearer ' + accessToken
-            },
-            body: JSON.stringify({
-                "uris": [songUri],
-                "position": 0
-            })
-        }
-
         try {
-            let addTrack = await fetch(`${BASE_URL}/playlists/${playListId}/tracks`, addingParameters)
+            let addTrack = await fetch(`${BASE_URL}/playlists/${playListId}/tracks`, getParamConfig())
             addTrack = await addTrack.json()
             console.log("adding res", addTrack)
 
@@ -167,7 +146,7 @@ const AddSong = (props) => {
                     {allTracks?.map((item, index) => <DisplayTracks item={item} key={index} />)}
 
                     {recentlyPlayed !== null && <Text style={{ color: COLORS.white }}>Recently Played</Text>}
-                    {recentlyPlayed?.map((item, index) => <DisplayTracks item={item?.track} key={index} />)}
+                    {recentlyPlayed?.map((item, index) => <DisplayTracks item={item} key={index} />)}
 
                     {recommendations !== null && <Text style={{ color: COLORS.white }}>Recommendations</Text>}
                     {recommendations?.map((item, index) => <DisplayTracks item={item} key={index} />)}

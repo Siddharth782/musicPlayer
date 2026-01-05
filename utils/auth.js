@@ -27,6 +27,10 @@ export async function refreshAccessToken() {
             return false;
         }
 
+        if (response.status === 401) {
+            return false;
+        }
+
         const data = await response.json();
 
         if (!data.access_token) return false;

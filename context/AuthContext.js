@@ -1,4 +1,4 @@
-import { createContext, useEffect, useRef, useState, useMemo } from 'react';
+import { createContext, useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { storage } from '../store/store';
 import { refreshAccessToken } from '../utils/auth';
 
@@ -8,45 +8,38 @@ const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(null);
     const refreshing = useRef(false);
 
-    useEffect(() => {
-        const accessToken = storage.getString('accessToken');
-        const expiresAt = storage.getNumber('expiresAt');
-
-        if (accessToken && expiresAt && expiresAt > Date.now()) {
-            setIsAuthenticated(true);
-        } else {
-            setIsAuthenticated(false);
-        }
+    const getAccessToken = useCallback(() => {
+        return storage.getString('accessToken');
     }, []);
 
     useEffect(() => {
-        if (!isAuthenticated) return;
-
         const checkAndRefresh = async () => {
             if (refreshing.current) return;
 
-            try {
-                const expiresAt = storage.getNumber('expiresAt');
-                if (!expiresAt) {
-                    clearAuth();
-                    return;
-                }
+            const accessToken = getAccessToken();
+            const expiresAt = storage.getNumber('expiresAt');
 
-                if (expiresAt - Date.now() < 120000) {
-                    refreshing.current = true;
-                    const refreshed = await refreshAccessToken();
-                    refreshing.current = false;
+            if (!accessToken || !expiresAt) {
+                setIsAuthenticated(false);
+                return;
+            }
 
-                    if (!refreshed) {
-                        clearAuth();
-                    }
-                }
-            } catch (err) {
+            const isExpired = expiresAt <= Date.now();
+            const isExpiringSoon = expiresAt - Date.now() < 120000;
+
+            if (isExpired || isExpiringSoon) {
+                refreshing.current = true;
+                const refreshed = await refreshAccessToken();
                 refreshing.current = false;
-                const expiresAt = storage.getNumber('expiresAt');
-                if (!expiresAt || expiresAt <= Date.now()) {
+
+                if (refreshed) {
+                    setIsAuthenticated(true);
+                } else {
+                    setIsAuthenticated(false);
                     clearAuth();
                 }
+            } else {
+                setIsAuthenticated(true);
             }
         };
 
@@ -54,7 +47,7 @@ const AuthProvider = ({ children }) => {
         const interval = setInterval(checkAndRefresh, 60000);
 
         return () => clearInterval(interval);
-    }, [isAuthenticated]);
+    }, []);
 
     const clearAuth = () => {
         storage.clearAll();
@@ -72,7 +65,8 @@ const AuthProvider = ({ children }) => {
         loginSuccess,
         logout,
         clearAuth,
-    }), [isAuthenticated]);
+        getAccessToken
+    }), [isAuthenticated, getAccessToken]);
 
     return (
         <AuthContext.Provider value={value}>

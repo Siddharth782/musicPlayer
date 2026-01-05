@@ -114,11 +114,11 @@ const SongPlayer = () => {
                     <Text numberOfLines={1} style={{ textAlign: 'center', ...FONTS.h3, color: COLORS.gray, width: '70%', alignSelf: 'center', marginVertical: 10 }}>{DisplayArtistsName({ names: nextSong?.artists })}</Text>
 
                     <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-evenly', alignItems: 'center' }}>
-                        <Icon name="skip-previous" size={60} color={COLORS.white} onPress={() => { setIsLoading(true), playAnotherTrack({ item: playlist[Number(currentIndex == 0 ? (playlist.length - 1) : (currentIndex - 1))]?.track }), setCurrentIndex(Number(currentIndex == 0 ? playlist.length - 1 : (currentIndex - 1))) }} />
+                        <Icon name="skip-previous" size={60} color={COLORS.white} onPress={() => { setIsLoading(true), playAnotherTrack({ item: playlist[Number(currentIndex == 0 ? (playlist.length - 1) : (currentIndex - 1))] }), setCurrentIndex(Number(currentIndex == 0 ? playlist.length - 1 : (currentIndex - 1))) }} />
 
                         <Icon name={isPlaying ? 'pause' : 'play'} size={60} color={COLORS.white} onPress={() => { setIsPlaying(!isPlaying), changeStatus() }} />
 
-                        <Icon name="skip-next" size={60} color={COLORS.white} onPress={() => { setIsLoading(true), playAnotherTrack({ item: playlist[Number(currentIndex + 1 == playlist.length ? 0 : (currentIndex + 1))]?.track }), setCurrentIndex(Number(currentIndex + 1 == playlist.length ? 0 : (currentIndex + 1))) }} />
+                        <Icon name="skip-next" size={60} color={COLORS.white} onPress={() => { setIsLoading(true), playAnotherTrack({ item: playlist[Number(currentIndex + 1 == playlist.length ? 0 : (currentIndex + 1))] }), setCurrentIndex(Number(currentIndex + 1 == playlist.length ? 0 : (currentIndex + 1))) }} />
 
                     </View>
                 </LinearGradient>

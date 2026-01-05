@@ -1,265 +1,188 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, FlatList, Modal } from 'react-native'
-import React, { useEffect, useState } from 'react'
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, ToastAndroid } from 'react-native'
+import React, { useEffect, useState, useContext, useCallback, useMemo } from 'react'
 import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import { storage } from '../../store/store'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
-import { DisplayArtistsName } from '../../components/DisplayArtistName'
-import Loader from '../../components/Loader'
-import { API_BASE_URL } from '../../config/config'
-import { useIsFocused } from '@react-navigation/native';
-
-const BASE_URL = API_BASE_URL
+import { AuthContext } from '../../context/AuthContext';
+import { DisplayFavoriteTracks, DisplayOtherPlaylists, DisplayArtist, DisplayNewMusic } from '../../components/DisplayFunctions';
+import { fetchWithAuthRetry } from '../../components/APIService';
+import SkeletonSection from '../../components/Placeholder';
 
 const Dashboard = (props) => {
 
-    const isFocused = useIsFocused();
+    const { clearAuth, getAccessToken } = useContext(AuthContext);
 
-    // for getting access token
-    const [accessToken, setAccessToken] = useState(storage.getString('accessToken'))
+    const [dashboardData, setDashboardData] = useState({
+        topTracks: null,
+        artists: null,
+        newReleases: null,
+        userPlaylists: null,
+        bollywood: null,
+        workout: null,
+        kPop: null,
+        party: null,
+        mood: null,
+        userName: null
+    });
 
-    let emptyImageUrl = 'https://www.google.com/imgres?imgurl=https%3A%2F%2Fe7.pngegg.com%2Fpngimages%2F88%2F561%2Fpng-clipart-yellow-bottom-black-note-icon-music-player-music-player-interface.png&tbnid=qOlEHu-HU7dRxM&vet=12ahUKEwiMvIrI-K6AAxUp3DgGHVOkDm8QMyg-egUIARCGAQ..i&imgrefurl=https%3A%2F%2Fwww.pngegg.com%2Fen%2Fpng-dkvzj&docid=ngZOdOtUS1NxdM&w=900&h=908&q=music%20player%20symbols&ved=2ahUKEwiMvIrI-K6AAxUp3DgGHVOkDm8QMyg-egUIARCGAQ'
+    useEffect(() => {
+        if (dashboardData.userName === null) getCurrentUser();
+        if (dashboardData.topTracks === null) fetchData('/me/top/tracks?limit=20', 'topTracks');
+        if (dashboardData.artists === null) fetchData('/me/top/artists?limit=10', 'artists');
+        if (dashboardData.newReleases === null) fetchData('/browse/new-releases?country=IN&limit=10', 'newReleases', 'albums');
+        if (dashboardData.userPlaylists === null) fetchData('/me/playlists', 'userPlaylists', 'playlists');
 
-    // arrays for storing data
-    const [userplaylists, setUserPlaylists] = useState([])
-    const [newReleases, setNewReleases] = useState([])
-    const [bollywood, setBollywood] = useState([])
-    const [workout, setWorkout] = useState([])
-    const [kPop, setKPop] = useState([])
-    const [party, setParty] = useState([])
-    const [mood, setMood] = useState([])
-    const [TopTracks, setTopTracks] = useState([])
-    const [artists, setArtists] = useState([])
+        if (dashboardData.bollywood === null) fetchData(`/search?q=bollywood&type=playlist&limit=10`, 'bollywood', 'playlists');
+        if (dashboardData.workout === null) fetchData(`/search?q=workout&type=playlist&limit=10`, 'workout', 'playlists');
+        if (dashboardData.kPop === null) fetchData(`/search?q=k-pop&type=playlist&limit=10`, 'kPop', 'playlists');
+        if (dashboardData.party === null) fetchData(`/search?q=party&type=playlist&limit=10`, 'party', 'playlists');
+        if (dashboardData.mood === null) fetchData(`/search?q=mood&type=playlist&limit=10`, 'mood', 'playlists');
+    }, []);
 
-    const [loaderVisible, setLoaderVisible] = useState(true)
-    const [name, setName] = useState(storage.getString('Name'))
+    const navigateToDetails = useCallback((params) => {
+        props.navigation.navigate('Details', params);
+    }, [props.navigation]);
 
-    // parameters to be passed while getting songs
-    let dataParameters = {
+    const getAuthenticatedConfig = useCallback(() => ({
         method: 'GET',
         headers: {
-            "Content-Type": 'application/json',
-            "Authorization": 'Bearer ' + accessToken
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${getAccessToken()}`,
+        },
+    }), [getAccessToken]);
+
+    const fetchData = async (endpoint, key, type = 'items') => {
+        try {
+            const data = await fetchWithAuthRetry(endpoint, getAuthenticatedConfig);
+            if (data) {
+                let processedData = [];
+                if (type === 'albums') processedData = data.albums?.items;
+                else if (type === 'playlists') processedData = data.playlists?.items;
+                else processedData = data.items;
+
+                setDashboardData(prev => ({
+                    ...prev,
+                    [key]: processedData || []
+                }));
+            }
+        } catch (error) {
+            if (error === "Session expired") {
+                clearAuth();
+                ToastAndroid.show("Error fetching data. Please try again later.", 3000);
+            }
+            setDashboardData(prev => ({ ...prev, [key]: [] }));
+        }
+    };
+
+    const getCurrentUser = async () => {
+        try {
+            const data = await fetchWithAuthRetry("/me", getAuthenticatedConfig);
+            if (!data) throw new Error('Failed to fetch user data');
+
+            setDashboardData(prev => ({
+                ...prev,
+                ['userName']: data?.display_name
+            }));
+
+            if (data?.email) {
+                storage.set('email', data.email);
+            }
+
+            if (data?.display_name) {
+                storage.set('Name', data.display_name);
+            }
+
+            if (data?.id) {
+                storage.set('UserId', String(data.id)); // Ensure string for storage
+            }
+
+        } catch (error) {
+            clearAuth();
+            ToastAndroid.show("Error fetching user data. Please try again later.", 3000);
         }
     }
 
-    // fetching songs thru API
-    useEffect(() => {
-        !name && getCurrentUser()
-        TopTracks.length === 0 && getCurrentUserTopTracks()
-        artists.length === 0 && getCurrentUserTopArtists()
-        newReleases.length === 0 && getNewReleases()
-        bollywood.length === 0 && getBollywood()
-        kPop.length === 0 && getKPop()
-        workout.length === 0 && getWorkOut()
-        mood.length === 0 && getMood()
-        party.length === 0 && getParty()
-    }, [])
+    const sections = useMemo(() => [
+        { key: 'topTracks', title: 'Your Favorite', data: dashboardData.topTracks, renderItem: DisplayFavoriteTracks },
+        { key: 'userPlaylists', title: 'Your Playlist', data: dashboardData.userPlaylists, renderItem: DisplayOtherPlaylists },
+        { key: 'artists', title: 'Your Top Artists', data: dashboardData.artists, renderItem: DisplayArtist },
+        { key: 'newReleases', title: 'New Music', data: dashboardData.newReleases, renderItem: DisplayNewMusic },
+        { key: 'bollywood', title: 'Bollywood Masti', data: dashboardData.bollywood, renderItem: DisplayOtherPlaylists },
+        { key: 'kPop', title: 'K-Pop', data: dashboardData.kPop, renderItem: DisplayOtherPlaylists },
+        { key: 'workout', title: 'Workout', data: dashboardData.workout, renderItem: DisplayOtherPlaylists },
+        { key: 'mood', title: 'Moody Beats', data: dashboardData.mood, renderItem: DisplayOtherPlaylists },
+        { key: 'party', title: 'Party is in Air', data: dashboardData.party, renderItem: DisplayOtherPlaylists },
+    ], [dashboardData]);
 
-    useEffect(() => {
-        // console.log("Focused: ", isFocused); //called whenever isFocused changes
-        getCurrentUserPlaylist()
-    }, [isFocused]);
+    const ListHeader = useMemo(() => (
+        <View style={styles.header}>
+            <Text numberOfLines={1} style={{ color: COLORS.white, fontSize: SIZES.h2 }} > {dashboardData.userName ? `Welcome ${dashboardData.userName.split(' ')[0]}` : 'Welcome'} </Text>
 
-    async function getCurrentUserTopTracks() {
-        fetch(BASE_URL + '/me/top/tracks?limit=20', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setTopTracks(res.items), setLoaderVisible(false) })
-        // .then((res) => { console.log("top tracks", res.items), setTopTracks(res.items) })
-    }
-
-    async function getCurrentUserTopArtists() {
-        fetch(BASE_URL + '/me/top/artists?limit=10', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setArtists(res?.items) })
-        // .then((res) => { console.log("top artists", res?.items), getTopArtistsTracks(res?.items), setArtists(res?.items) })
-    }
-
-    async function getCurrentUserPlaylist() {
-        fetch(BASE_URL + '/me/playlists', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setUserPlaylists(res?.items) })
-        // .then((res) => { console.log("user Playlist", res?.items[1]), setUserPlaylists(res?.items) })
-    }
-
-    async function getCurrentUser() {
-        fetch(BASE_URL + '/me', dataParameters)
-            .then((res) => res.json())
-            .then((res) => {
-                setName(res?.display_name);
-
-                if (res?.email) {
-                    storage.set('email', res.email);
-                }
-
-                if (res?.display_name) {
-                    storage.set('Name', res.display_name);
-                }
-
-                if (res?.id) {
-                    storage.set('UserId', String(res.id)); // ensure string
-                }
-            });
-        // .then((res) => { console.log(res), setFirstName(res.display_name.split(' ')[0]), storage.set('email', res.email), storage.set('Name', res.display_name) })
-    }
-
-    // new Released songs -> India
-    async function getNewReleases() {
-        fetch(BASE_URL + '/browse/new-releases?country=IN&limit=10', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setNewReleases(res?.albums?.items) })
-        // .then((res) => { console.log("new Releases", res), setNewReleases(res?.albums?.items) })
-
-    }
-
-    // bollywood Playlists
-    async function getBollywood() {
-        fetch(BASE_URL + '/browse/categories/0JQ5DAqbMKFHCxg5H5PtqW/playlists?limit=10', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setBollywood(res?.playlists?.items) })
-        // .then((res) => { console.log("bollywood", res?.playlists?.items), setBollywood(res?.playlists?.items) })
-    }
-
-    // Workout playlist
-    async function getWorkOut() {
-        fetch(BASE_URL + '/browse/categories/0JQ5DAqbMKFAXlCG6QvYQ4/playlists?limit=10', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setWorkout(res?.playlists?.items) })
-        // .then((res) => { console.log("workout", res?.playlists?.items), setWorkout(res?.playlists?.items) })
-    }
-
-    // K-Pop Playlist
-    async function getKPop() {
-        fetch(BASE_URL + '/browse/categories/0JQ5DAqbMKFGvOw3O4nLAf/playlists?limit=10', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setKPop(res?.playlists?.items) })
-        // .then((res) => { console.log("K Pop", res?.playlists?.items), setKPop(res?.playlists?.items) })
-    }
-    // party playlist
-    async function getParty() {
-        fetch(BASE_URL + '/browse/categories/0JQ5DAqbMKFA6SOHvT3gck/playlists?limit=10', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setParty(res?.playlists?.items) })
-        // .then((res) => { console.log("party", res?.playlists?.items), setParty(res?.playlists?.items) })
-    }
-
-    // moody songs playlist
-    async function getMood() {
-        fetch(BASE_URL + '/browse/categories/0JQ5DAqbMKFzHmL4tf05da/playlists?limit=10', dataParameters)
-            .then((res) => res.json())
-            .then((res) => { setMood(res?.playlists?.items) })
-        // .then((res) => { console.log("Mood", res?.playlists?.items), setMood(res?.playlists?.items) })
-    }
-
-    // Displaying New released Music
-    function DisplayNewMusic({ item }) {
-        // console.log("favorite artists tracks",item)
-
-        return (
-            <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, description: item?.description, coverImage: item?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
-                <View style={[{ backgroundColor: COLORS.MidGreen, justifyContent: 'center' }, styles.imageDisplay]}>
-                    <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : emptyImageUrl) }} style={styles.imageDisplay} />
-                </View>
-                <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
-                <Text numberOfLines={2} style={{ flexWrap: 'wrap', width: '70%' }}>{DisplayArtistsName({ names: item?.artists })}</Text>
+            <TouchableOpacity onPress={() => props.navigation.navigate('Settings')} >
+                <Icon name="cog" color={COLORS.white} size={20} />
             </TouchableOpacity>
-        )
-    }
-
-    // For showing playlists -> Bollywood, Mood, Party, K-Pop, Workout
-    function DisplayOtherPlaylists({ item }) {
-
-        return (
-            <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, description: item?.description, coverImage: item?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
-                <View style={[{ backgroundColor: COLORS.MidGreen, justifyContent: 'center' }, styles.imageDisplay]}>
-                    <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : emptyImageUrl) }} style={styles.imageDisplay} />
-                </View>
-                <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
-                <Text numberOfLines={2}>{item?.description}</Text>
-            </TouchableOpacity>
-        )
-    }
-
-    // For showing Users Top Artists
-    function DisplayArtist({ item }) {
-
-        return (
-            <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, coverImage: item?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
-                <View style={[styles.imageDisplay]}>
-                    <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : item?.albums?.images[0]?.url) }} style={[styles.imageDisplay, { borderRadius: 75 }]} />
-                </View>
-                <View>
-                    <Text numberOfLines={1} style={[styles.displayName, { color: COLORS.white }]}>{item?.name}</Text>
-                    <Text numberOfLines={1} style={[styles.displayName, { color: COLORS.gray }]}>Artist</Text>
-                </View>
-            </TouchableOpacity>
-        )
-    }
-
-    // For showing Users Top Tracks
-    function DisplayFavoriteTracks({ item }) {
-
-        return (
-            <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, coverImage: item?.album?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
-                <View style={[{ backgroundColor: COLORS.MidGreen, justifyContent: 'center' }, styles.imageDisplay]}>
-                    <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : emptyImageUrl) }} style={styles.imageDisplay} />
-                </View>
-                <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
-                <Text numberOfLines={2}>{DisplayArtistsName({ names: item?.artists })}</Text>
-            </TouchableOpacity>
-        )
-    }
+        </View>
+    ), [dashboardData?.userName])
 
     return (
-        <ScrollView style={{ backgroundColor: COLORS.black, flex: 1, padding: 15 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Text numberOfLines={1} style={{ color: 'white', fontSize: 20 }}>{name ? `Welcome ${name?.split(' ')[0]}` : 'Welcome'}</Text>
-                <TouchableOpacity onPress={() => props.navigation.navigate("Settings")}>
-                    <Icon name="cog" color={COLORS.white} size={20} />
-                </TouchableOpacity>
-            </View>
+        <>
+            <FlatList
+                style={styles.backGround}
+                ListHeaderComponent={ListHeader}
+                data={sections}
+                keyExtractor={(section) => section.key}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item: section }) => {
+                    if (section.data === null) {
+                        return <SkeletonSection layout={"Horizontal"} />;
+                    }
+                    if (!section.data?.length) return null;
 
-            <Modal transparent={true} visible={loaderVisible}>
-                <Loader loaderVisible={loaderVisible} />
-            </Modal>
+                    return (
+                        <View style={{ marginBottom: 20 }}>
+                            <Text style={styles.sectionHeader}>{section.title}</Text>
 
-            <View style={{ marginVertical: 20 }}>
+                            <FlatList
+                                horizontal
+                                removeClippedSubviews
+                                data={section.data}
+                                keyExtractor={(row, index) => row?.id ?? `${section.key}-${index}`}
+                                showsHorizontalScrollIndicator={false}
+                                renderItem={({ item }) => {
+                                    const Renderer = section.renderItem;
+                                    return (
+                                        <Renderer styles={styles} item={item} onPress={navigateToDetails} />
+                                    );
+                                }}
+                            />
+                        </View>
+                    );
+                }}
+                ListEmptyComponent={() => {
+                    const isLoadingAny = Object.values(dashboardData).some(val => val === null);
+                    if (!isLoadingAny) return <Text style={styles.emptyText}>No content available</Text>;
+                    return null;
+                }}
+            />
 
-                {TopTracks?.length > 0 && (<Text style={styles.header}>Your Favorite</Text>)}
-                {TopTracks?.length > 0 && <FlatList data={TopTracks} renderItem={({ item }) => <DisplayFavoriteTracks item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {userplaylists?.length > 0 && (<Text style={styles.header}>Your Playlist</Text>)}
-                {userplaylists?.length > 0 && <FlatList data={userplaylists} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {artists?.length > 0 && (<Text style={styles.header}>Your Top Artists</Text>)}
-                {artists?.length > 0 && <FlatList data={artists} renderItem={({ item }) => <DisplayArtist item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {newReleases?.length > 0 && (<Text style={styles.header}>New Music</Text>)}
-                {newReleases?.length > 0 && <FlatList data={newReleases} renderItem={({ item }) => <DisplayNewMusic item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {bollywood?.length > 0 && (<Text style={styles.header}>Bollywood Masti</Text>)}
-                {bollywood?.length > 0 && <FlatList data={bollywood} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {kPop?.length > 0 && (<Text style={styles.header}>K Pop</Text>)}
-                {kPop?.length > 0 && <FlatList data={kPop} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {workout?.length > 0 && (<Text style={styles.header}>Workout</Text>)}
-                {workout?.length > 0 && <FlatList data={workout} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {mood?.length > 0 && (<Text style={styles.header}>Moody Beats</Text>)}
-                {mood?.length > 0 && <FlatList data={mood} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-                {party?.length > 0 && (<Text style={styles.header}>Party is in Air</Text>)}
-                {party?.length > 0 && <FlatList data={party} renderItem={({ item }) => <DisplayOtherPlaylists item={item} />} keyExtractor={(item) => item?.id} horizontal={true} />}
-
-
-            </View>
-
-        </ScrollView>
-    )
+        </>
+    );
 }
 
 const styles = StyleSheet.create({
+    backGround: {
+        backgroundColor: COLORS.black,
+        flex: 1,
+        padding: 15
+    },
     header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+        marginHorizontal: 4
+    },
+    sectionHeader: {
         ...FONTS.h3,
         color: COLORS.white,
         marginVertical: 5
@@ -270,7 +193,8 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap'
     },
     itemStyle: {
-        margin: 10,
+        marginHorizontal: 10,
+        marginVertical: 5,
         width: 160
     },
     imageDisplay: {
@@ -278,7 +202,12 @@ const styles = StyleSheet.create({
         width: 150,
         marginBottom: 5,
         borderRadius: SIZES.radius
-    }
+    },
+    emptyText: {
+        color: 'white',
+        textAlign: 'center',
+        marginTop: 50
+    },
 })
 
 export default Dashboard
