@@ -151,7 +151,7 @@ const Dashboard = (props) => {
                                 renderItem={({ item }) => {
                                     const Renderer = section.renderItem;
                                     return (
-                                        <Renderer styles={styles} item={item} onPress={navigateToDetails} />
+                                        <Renderer design={styles} item={item} onPress={navigateToDetails} />
                                     );
                                 }}
                             />
@@ -202,6 +202,12 @@ const styles = StyleSheet.create({
         width: 150,
         marginBottom: 5,
         borderRadius: SIZES.radius
+    },
+    artistImageDisplay: {
+        height: 150,
+        width: 150,
+        marginBottom: 5,
+        borderRadius: 75
     },
     emptyText: {
         color: 'white',

@@ -20,8 +20,8 @@ const SkeletonSection = ({ layout }) => {
             <Animated.View style={[styles.title, { opacity }]} />
 
             {/* Horizontal List Skeletons */}
-            <View style={{ flexDirection: layout === "Horizontal" ? 'row' : 'column'}}>
-                {[1, 2, 3].map((key) => (
+            <View style={{ flexDirection: layout === "Horizontal" ? 'row' : 'column' }}>
+                {[1, 2, 3, 4, 5].map((key) => (
                     <Animated.View key={key} style={[styles.card, { opacity }]} />
                 ))}
             </View>

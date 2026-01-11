@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Image, ToastAndroid, FlatList } from 'react-native'
+import { View, Text, TouchableOpacity, StyleSheet, Image, ToastAndroid, FlatList, Dimensions } from 'react-native'
 import React, { useEffect, useState, useContext, useCallback, useMemo } from 'react'
 import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
@@ -9,68 +9,105 @@ import { useIsFocused } from '@react-navigation/native';
 import { AuthContext } from '../../context/AuthContext';
 import { addToLikedSongs, fetchWithAuthRetry } from '../../components/APIService';
 import SkeletonSection from '../../components/Placeholder';
-import { DisplayTracks } from '../../components/DisplayFunctions'
+import { DisplayData } from '../../components/DisplayFunctions'
+import playlistCover from '../../assets/backupImg.jpg';
 
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 const Details = (props) => {
     const isFocused = useIsFocused();
     const { id, description, coverImage, name, type } = props.route.params
     const { getAccessToken } = useContext(AuthContext);
-    const { currentTrack, setIsLoading, setPlaylistName, manageQueue, playlist, playTrack } = useContext(PlayerContext)
+    const { currentTrack, setIsLoading, manageQueue, playlist, playTrack, setCurrentIndex } = useContext(PlayerContext)
 
     const [tracks, setTracks] = useState(null)
+    const [track, setTrack] = useState(null)
     const [artistAlbums, setArtistAlbums] = useState(null)
     const [playlistDetails, setPlaylistDetails] = useState(null)
-    const [track, setTrack] = useState(null)
     const [loaderVisible, setLoaderVisible] = useState(true)
     const [modalVisible, setModalVisible] = useState(false)
     const [selectedSong, setSelectedSong] = useState(null)
 
-    const getParamConfig = () => ({
+    const [offset, setOffset] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+
+    const getParamConfig = useCallback(() => ({
         method: 'GET',
         headers: {
             "Content-Type": 'application/json',
             "Authorization": `Bearer ${getAccessToken()}`
         }
-    });
+    }), [getAccessToken]);
 
     useEffect(() => {
-        if (name === "Favorite") getSavedTracks();
-        if (type === "album") getAlbumTracks();
-        if (type === "track") getSingleTrack();
-        if (type === "artist") getArtistsTracks();
-    }, [type, name]);
+        setOffset(0);
+        setHasMore(true);
+        setTracks([]);
+
+        if (name === "Favorite") getTracks(`/me/tracks?limit=50`);
+        if (type === "album") getTracks(`/albums/${id}/tracks`);
+        if (type === "track") getTracks(`/tracks/${id}`);
+        if (type === "artist") {
+            getArtistsTracks();
+            setHasMore(false);
+        }
+    }, [type, name, id]);
 
     useEffect(() => {
         if (type === "playlist") {
-            getPlaylistTracks()
+            getTracks(`/playlists/${id}/tracks`)
             getPlaylist()
         }
     }, [isFocused]);
 
-    useEffect(() => {
-        if (name) {
-            setPlaylistName(name);
-        }
-    }, [name, setPlaylistName]);
-
     // get tracks of a given playlist
-    async function getPlaylistTracks() {
+    const getTracks = useCallback(async (endpoint, isLoadMore = false) => {
         try {
-            const data = await fetchWithAuthRetry(`/playlists/${id}/tracks`, getParamConfig);
+            const data = await fetchWithAuthRetry(endpoint, getParamConfig);
             if (!data) throw new Error('Failed to fetch user data');
 
-            const extractedTracks = data?.items
-                .map(item => item?.track)
-                .filter(Boolean);
+            let extractedTracks;
 
-            setTracks(extractedTracks);
-            manageQueue(extractedTracks, false);
+            if (type === "playlist") {
+                extractedTracks = data?.items
+                    .map(item => item?.track)
+                    .filter(Boolean);
+
+                if (extractedTracks.length < 50) setHasMore(false);
+
+                if (isLoadMore) {
+                    setTracks(prev => {
+                        const existingIds = new Set(prev.map(t => t.id));
+                        const newUniqueTracks = extractedTracks.filter(t => !existingIds.has(t.id));
+                        return [...prev, ...newUniqueTracks];
+                    });
+                } else {
+                    setTracks(extractedTracks);
+                }
+            } else if (type === "track") {
+                extractedTracks = data;
+                setTrack(extractedTracks);
+            } else {
+                extractedTracks = data?.items;
+
+                if (extractedTracks.length < 50) setHasMore(false);
+
+                if (isLoadMore) {
+                    setTracks(prev => {
+                        const existingIds = new Set(prev.map(t => t.id));
+                        const newUniqueTracks = extractedTracks.filter(t => !existingIds.has(t.id));
+                        return [...prev, ...newUniqueTracks];
+                    });
+                } else {
+                    setTracks(extractedTracks);
+                }
+            }
+
             setLoaderVisible(false);
         } catch (error) {
             ToastAndroid.show(error.message, 3000);
         }
-    }
+    })
 
     // get the given playlist
     async function getPlaylist() {
@@ -84,72 +121,21 @@ const Details = (props) => {
         }
     }
 
-    // this is used for getting the user favorite tracks
-    async function getSavedTracks() {
-        try {
-            const data = await fetchWithAuthRetry(`/me/tracks?limit=50`, getParamConfig);
-            if (!data) throw new Error('Failed to fetch user data');
-
-            setTracks(data?.items);
-        } catch (error) {
-            ToastAndroid.show(error.message, 3000);
-        } finally {
-            setLoaderVisible(false);
-        }
-    }
-
     // this is used for getting tracks of selected artist
     async function getArtistsTracks() {
         try {
-            const topData = await fetchWithAuthRetry(`/artists/${id}/top-tracks?country=IN&limit=15`, getParamConfig);
-            const albumsData = await fetchWithAuthRetry(`/artists/${id}/albums?country=IN&limit=15`, getParamConfig);
-            if (!topData && !albumsData) throw new Error('Failed to fetch user data');
+            const [topTracks, albumsData] = await Promise.all([
+                fetchWithAuthRetry(`/search?q=${name}&type=track&limit=20`, getParamConfig),
+                fetchWithAuthRetry(`/artists/${id}/albums?country=IN&limit=5`, getParamConfig)
+            ]);
+            if (!topTracks && !albumsData) throw new Error('Failed to fetch user data');
 
-            setTracks(topData?.tracks);
-            manageQueue(topData?.tracks, false);
+            setTracks(topTracks?.tracks?.items);
             setArtistAlbums(albumsData?.items);
         } catch (error) {
             ToastAndroid.show(error.message, 3000);
         } finally {
             setLoaderVisible(false);
-        }
-    }
-
-    // when only 1 track is selected
-    async function getSingleTrack() {
-        try {
-            const data = await fetchWithAuthRetry(`/tracks/${id}`, getParamConfig);
-            if (!data) throw new Error('Failed to fetch user data');
-            setTrack(data);
-            manageQueue(data, true);
-            setLoaderVisible(false);
-        } catch (error) {
-            ToastAndroid.show(error.message, 3000);
-        }
-    }
-
-    // tracks of an album when an album is selected
-    async function getAlbumTracks() {
-        try {
-            const data = await fetchWithAuthRetry(`/albums/${id}/tracks`, getParamConfig);
-            if (!data) throw new Error('Failed to fetch user data');
-
-            setTracks(data?.items);
-            manageQueue(data?.items, false);
-            setLoaderVisible(false);
-        } catch (error) {
-            ToastAndroid.show(error.message, 3000);
-        }
-    }
-
-    // for playing selected track
-    async function playCurrentTrack({ item, id }) {
-
-        const res = await playTrack({ item, id });
-
-        if (!res.ok) {
-            setIsLoading(false);
-            ToastAndroid.show(res.error, 3000);
         }
     }
 
@@ -211,17 +197,12 @@ const Details = (props) => {
         )
     }, [id, props.navigation, loaderVisible]);
 
-    const playFirst = useCallback(() => {
-        if (!playlist?.length) return;
-        playCurrentTrack({ item: playlist[0], id: 0 });
-    }, [playlist, playCurrentTrack]);
-
     // for rendering header at top of page
     const headerImage = useMemo(() => {
         return (
             <View >
                 <Icon name='arrow-left-thin' onPress={() => props.navigation.goBack()} style={styles.backIcon} color={'white'} size={32} />
-                <Image source={{ uri: (coverImage ? coverImage : "https://developer.spotify.com/images/guidelines/design/icon1@2x.png") }} style={{ height: 300, width: '100%', marginVertical: 5 }} />
+                <Image source={coverImage ? { uri: coverImage } : playlistCover} style={{ height: SCREEN_HEIGHT * 0.35, width: '100%', marginVertical: 5 }} />
             </View>
         )
     }, [coverImage, props.navigation])
@@ -233,6 +214,35 @@ const Details = (props) => {
         if (type === 'track') return track ? [track] : [];
         return [];
     }, [type, tracks, artistAlbums, track]);
+
+    // for playing selected track
+    const handleClick = useCallback(async ({ item }) => {
+
+        if (item?.type === "track") {
+            const index = playlist.findIndex(t => t.id === item.id);
+            setCurrentIndex(index);
+
+            const res = await playTrack({ item });
+
+            manageQueue(computedTrackList, false, name);
+
+            if (!res.ok) {
+                setIsLoading(false);
+                ToastAndroid.show(res.error, 3000);
+            }
+        } else {
+            props.navigation.navigate("Details", { id: item?.id, coverImage: item?.images[0]?.url, name: item?.name, type: item?.type })
+        }
+    })
+
+    const playFirst = useCallback(() => {
+        if (!computedTrackList || computedTrackList.length === 0) {
+            console.log("I am returned from here");
+            return;
+        }
+        handleClick({ item: computedTrackList[0] });
+
+    }, [computedTrackList, handleClick]);
 
     const header = useMemo(() => {
         return (
@@ -264,28 +274,35 @@ const Details = (props) => {
 
             </>
         );
-    }, [headerImage, name, description, playlistDetails, type, tracks, playFirst, props.navigation, id]);
+    }, [headerImage, name, description, playlistDetails, type, tracks, playFirst, props.navigation, id, computedTrackList]);
 
-    const renderTracks = useCallback(({ item, index }) => (
-        <DisplayTracks item={item} id={index} isActive={currentTrack?.id === item?.id} onTouch={playCurrentTrack} currentSong={setSelectedSong} modalVisible={setModalVisible} />
-    ), [currentTrack, playCurrentTrack]);
+    const renderTracks = useCallback(({ item }) => (
+        <DisplayData item={item} isActive={currentTrack?.id === item?.id} onTouch={handleClick} currentSong={setSelectedSong} openModal={setModalVisible} design={styles} />
+    ), [computedTrackList, currentTrack, handleClick]);
 
-    const EmptyComponent = useCallback(() => renderNoTracks(), [renderNoTracks]);
+    const loadMore = () => {
+        if (!hasMore || loaderVisible) return;
+        const nextOffset = offset + 50;
+        setOffset(nextOffset);
+        getTracks(`/playlists/${id}/tracks?offset=${nextOffset}&limit=50`, true);
+    };
 
     return (
         <>
             <FlatList
                 data={computedTrackList}
-                keyExtractor={(item) =>
-                    item?.id ??
-                    item?.uri ??
-                    `${type}-${JSON.stringify(item).slice(0, 20)}`
-                }
+                keyExtractor={(item, index) => item.id ? `${item.id}-${index}` : index.toString()}
                 renderItem={renderTracks}
                 ListHeaderComponent={header}
-                ListEmptyComponent={EmptyComponent}
+                ListEmptyComponent={renderNoTracks}
+                onEndReached={loadMore}
+                onEndReachedThreshold={0.5}
+                removeClippedSubviews={true}
                 contentContainerStyle={{ flexGrow: 1, backgroundColor: COLORS.black, paddingTop: 10, paddingBottom: currentTrack ? 70 : 20 }}
                 showsVerticalScrollIndicator={false}
+                initialNumToRender={10}
+                maxToRenderPerBatch={15}
+                windowSize={10}
             />
 
             <BottomUpModal
@@ -312,6 +329,13 @@ const styles = StyleSheet.create({
         marginVertical: 3,
         ...FONTS.h2,
         color: COLORS.white
+    },
+    displaySong: {
+        alignItems: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginLeft: 10,
+        flex: 1,
     },
     descriptionText: {
         marginLeft: 15,
@@ -372,5 +396,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginHorizontal: 10,
         marginVertical: 5
+    },
+    textContainer: {
+        flex: 1,
+        marginLeft: 5
     }
 })
