@@ -1,7 +1,6 @@
 import { TouchableOpacity, View, Text, Image } from 'react-native';
 import React, { memo } from 'react';
 import { COLORS, FONTS, SIZES } from '../constants/theme';
-import { DisplayArtistsName } from './DisplayArtistName';
 import fallbackImage from '../assets/fallbackImage.png';
 import backupImg from '../assets/backupImg.jpg';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
@@ -42,7 +41,7 @@ export const DisplayNewMusic = memo(({ item, onPress, design }) => (
         item={item}
         onPress={onPress}
         imageUrl={item?.images?.[0]?.url}
-        subText={DisplayArtistsName({ names: item?.artists })}
+        subText={formatArtistName({ names: item?.artists })}
         styles={design}
     />
 ));
@@ -62,7 +61,7 @@ export const DisplayFavoriteTracks = memo(({ item, onPress, design }) => (
         item={item}
         onPress={onPress}
         imageUrl={item?.album?.images?.[0]?.url}
-        subText={DisplayArtistsName({ names: item?.artists })}
+        subText={formatArtistName({ names: item?.artists })}
         styles={design}
     />
 ));
@@ -104,9 +103,9 @@ export const DisplayData = ({ item, onTouch, isActive, currentSong, openModal, d
             <View style={design.displaySong}>
                 <View style={design.textContainer}>
                     <Text numberOfLines={1} style={{ ...FONTS.h3, color: (isActive ? COLORS.MidGreen : COLORS.white) }}>{item?.name}</Text>
-                    {item?.type === "track" && <Text numberOfLines={1}>Track ∙ {DisplayArtistsName({ names: item?.artists })}</Text>}
-                    {item?.type === "album" && <Text numberOfLines={1}>Album ∙ {DisplayArtistsName({ names: item?.artists })}</Text>}
-                    {item?.type === "playlist" && <Text numberOfLines={1}>Playlist ∙ {DisplayArtistsName({ names: item?.artists })}  {item?.type} </Text>}
+                    {item?.type === "track" && <Text numberOfLines={1}>Track ∙ {formatArtistName({ names: item?.artists })}</Text>}
+                    {item?.type === "album" && <Text numberOfLines={1}>Album ∙ {formatArtistName({ names: item?.artists })}</Text>}
+                    {item?.type === "playlist" && <Text numberOfLines={1}>Playlist ∙ {formatArtistName({ names: item?.artists })}  {item?.type} </Text>}
                     {item?.type === "artist" && <Text numberOfLines={1}>Artist ∙ {item?.name} </Text>}
                 </View>
 
@@ -116,4 +115,18 @@ export const DisplayData = ({ item, onTouch, isActive, currentSong, openModal, d
             </View>
         </TouchableOpacity>
     )
+}
+
+// for displaying Artist Name(s)
+export function formatArtistName(props) {
+    const { names } = props
+    let artistName = ''
+
+    for (let index = 0; index < names?.length; index++) {
+        const element = names[index];
+        artistName += element?.name
+        artistName += ", "
+    }
+
+    return artistName.slice(0, artistName.length - 2)
 }

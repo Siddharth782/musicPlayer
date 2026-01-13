@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext } from 'react'
 import { storage } from '../../store/store'
 import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import Loader from '../../components/Loader'
-import { DisplayArtistsName } from '../../components/DisplayArtistName'
+import { formatArtistName } from '../../components/DisplayFunctions'
 import { PlayerContext } from '../../context/PlayerContext'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 import { API_BASE_URL } from '../../config/config'
@@ -82,9 +82,9 @@ const Library = (props) => {
                 </View>
                 <View style={{ justifyContent: 'center' }}>
                     <Text numberOfLines={1} style={[styles.displayName, { color: COLORS.white }]}>{item?.name}</Text>
-                    {item?.type === "album" && <Text numberOfLines={1} style={styles.displayName}>Album ∙ {DisplayArtistsName({ names: item?.artists })}</Text>}
+                    {item?.type === "album" && <Text numberOfLines={1} style={styles.displayName}>Album ∙ {formatArtistName({ names: item?.artists })}</Text>}
                     {item?.type === "playlist" && <Text numberOfLines={1} style={styles.displayName}>Playlist ∙ {item?.owner?.display_name}</Text>}
-                    {/* <Text numberOfLines={1} style={styles.displayName}>{ item?.type === "album" ? "Album" : "Playlist" } ∙ {DisplayArtistsName({ names: item?.artists })}</Text> */}
+                    {/* <Text numberOfLines={1} style={styles.displayName}>{ item?.type === "album" ? "Album" : "Playlist" } ∙ {formatArtistName({ names: item?.artists })}</Text> */}
                 </View>
             </TouchableOpacity>
         )
@@ -96,7 +96,7 @@ const Library = (props) => {
         return (
             <TouchableOpacity onPress={() => props.navigation.navigate("Details", { id: item?.id, coverImage: item?.images[0]?.url, name: item?.name, type: item?.type })} style={styles.itemStyle}>
                 <View style={[styles.imageDisplay]}>
-                    <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : item?.albums?.images[0]?.url) }} style={[styles.imageDisplay, { borderRadius: 42 }]} />
+                    <Image source={{ uri: (item?.images[0]?.url ? item?.images[0]?.url : item?.album?.images?.[0]?.url) }} style={[styles.imageDisplay, { borderRadius: 42 }]} />
                 </View>
                 <View>
 

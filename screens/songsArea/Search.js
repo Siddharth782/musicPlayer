@@ -2,12 +2,11 @@ import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList, Image, T
 import React, { useState, useContext, useCallback, useMemo } from 'react'
 import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
-import { DisplayArtistsName } from '../../components/DisplayArtistName'
 import { PlayerContext } from '../../context/PlayerContext'
 import { AuthContext } from '../../context/AuthContext';
 import { addToLikedSongs, fetchWithAuthRetry } from '../../components/APIService';
 import SkeletonSection from '../../components/Placeholder';
-import { DisplayData } from '../../components/DisplayFunctions';
+import { DisplayData, formatArtistName } from '../../components/DisplayFunctions';
 import BottomUpModal from '../../components/BottomUpModal'
 
 
@@ -136,9 +135,9 @@ const Search = (props) => {
         return (
             <View style={{ padding: 5, margin: 5, flex: 1 }}>
                 <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Image source={{ uri: (item?.album?.images[0]?.url ? item?.album?.images[0]?.url : item?.images?.[0].url) }} style={styles.displayOptionsImage} />
+                    <Image source={{ uri: (item?.album?.images?.[0]?.url ? item?.album?.images?.[0]?.url : item?.images?.[0]?.url) }} style={styles.displayOptionsImage} />
                     <Text numberOfLines={1} style={styles.displaySongName}>{item?.name}</Text>
-                    <Text numberOfLines={1} style={{ marginVertical: 3, ...FONTS.h4 }}>{DisplayArtistsName({ names: item?.artists })}</Text>
+                    <Text numberOfLines={1} style={{ marginVertical: 3, ...FONTS.h4 }}>{formatArtistName({ names: item?.artists })}</Text>
                 </View>
 
                 <View>
@@ -296,8 +295,8 @@ const styles = StyleSheet.create({
         margin: 5,
         borderRadius: SIZES.radius
     },
-    textContainer:{
-        flex:1,
+    textContainer: {
+        flex: 1,
         marginLeft: -7
     }
 })

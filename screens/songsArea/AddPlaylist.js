@@ -18,18 +18,7 @@ const AddPlaylist = (props) => {
 
     let userId = storage.getString("UserId")
 
-    // for rendering header
-    const renderHeader = () => {
-        return (
-            <View style={styles.header}>
-                <Icon name='arrow-left-thin' onPress={() => props.navigation.goBack()} style={{ position: 'absolute', left: 10 }} color={'white'} size={32} />
-                <Text style={{ color: 'white', fontSize: 20 }}>Create your own Playlist</Text>
-            </View>
-        )
-    }
-
     async function createPlaylist() {
-        let accessToken = getAccessToken();
         setLoaderVisible(true)
 
         try {
@@ -37,7 +26,7 @@ const AddPlaylist = (props) => {
                 method: 'POST',
                 headers: {
                     "Content-Type": 'application/json',
-                    "Authorization": 'Bearer ' + accessToken
+                    "Authorization": 'Bearer ' + getAccessToken()
                 },
                 body: JSON.stringify({
                     name: playlistName,
@@ -62,17 +51,20 @@ const AddPlaylist = (props) => {
     return (
         <ScrollView style={{ flex: 1, backgroundColor: COLORS.black }}>
 
-            {renderHeader()}
+            <View style={styles.header}>
+                <Icon name='arrow-left-thin' onPress={() => props.navigation.goBack()} style={{ position: 'absolute', left: 10 }} color={'white'} size={32} />
+                <Text style={{ color: 'white', fontSize: 20 }}>Create your own Playlist</Text>
+            </View>
 
             <Loader loaderVisible={loaderVisible} />
 
             <View style={{ paddingHorizontal: 15 }}>
 
-                <TextInput placeholder='Playlist Name' placeholderTextColor={COLORS.gray} value={playlistName} style={{ borderRadius: SIZES.radius, paddingHorizontal: 15, borderWidth: 1, borderColor: COLORS.white, marginVertical: 15 }} onChangeText={(val) => setPlaylistName(val)} />
+                <TextInput placeholder='Playlist Name' placeholderTextColor={COLORS.gray} value={playlistName} style={styles.inputBox} onChangeText={(val) => setPlaylistName(val)} />
 
-                <TextInput multiline={true} placeholder='Playlist Description' placeholderTextColor={COLORS.gray} value={playlistDescription} style={{ borderRadius: SIZES.radius, paddingHorizontal: 15, borderWidth: 1, borderColor: COLORS.white, marginVertical: 15 }} onChangeText={(val) => setPlaylistDescription(val)} />
+                <TextInput multiline={true} placeholder='Playlist Description' placeholderTextColor={COLORS.gray} value={playlistDescription} style={styles.inputBox} onChangeText={(val) => setPlaylistDescription(val)} />
 
-                <TouchableOpacity onPress={() => createPlaylist()} style={{ ...FONTS.h3, backgroundColor: COLORS.white, borderRadius: SIZES.radius * 2, justifyContent: 'center', alignItems: 'center', width: '60%', alignSelf: 'center', marginVertical: 20 }}>
+                <TouchableOpacity onPress={() => createPlaylist()} style={styles.createBtn}>
                     <Text style={{ ...FONTS.h2, color: COLORS.black }}>Create Playlist</Text>
                 </TouchableOpacity>
             </View>
@@ -94,5 +86,23 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         marginBottom: 20,
         backgroundColor: COLORS.gray
+    },
+    inputBox: {
+        borderRadius: SIZES.radius,
+        paddingHorizontal: 15,
+        borderWidth: 1,
+        borderColor: COLORS.white,
+        marginVertical: 15
+    },
+    createBtn: {
+        ...FONTS.h3,
+        backgroundColor: COLORS.white,
+        borderRadius: SIZES.radius * 2,
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: '60%',
+        alignSelf: 'center',
+        marginVertical: 20,
+        paddingVertical: 5
     }
 })

@@ -6,6 +6,7 @@ import { COLORS, FONTS, SIZES } from '../../constants/theme'
 import Loader from '../../components/Loader'
 import { API_BASE_URL } from '../../config/config'
 import { AuthContext } from '../../context/AuthContext';
+import { formatArtistName } from '../../components/DisplayFunctions'
 const BASE_URL = API_BASE_URL
 
 const AddtoPlaylist = (props) => {
@@ -83,9 +84,9 @@ const AddtoPlaylist = (props) => {
                 </View>
                 <View style={{ justifyContent: 'center' }}>
                     <Text numberOfLines={1} style={[styles.displayName, { color: COLORS.white }]}>{item?.name}</Text>
-                    {item?.type === "album" && <Text numberOfLines={1} style={styles.displayName}>Album ∙ {DisplayArtistsName({ names: item?.artists })}</Text>}
+                    {item?.type === "album" && <Text numberOfLines={1} style={styles.displayName}>Album ∙ {formatArtistName({ names: item?.artists })}</Text>}
                     {item?.type === "playlist" && <Text numberOfLines={1} style={styles.displayName}>Playlist ∙ {item?.owner?.display_name}</Text>}
-                    {/* <Text numberOfLines={1} style={styles.displayName}>{ item?.type === "album" ? "Album" : "Playlist" } ∙ {DisplayArtistsName({ names: item?.artists })}</Text> */}
+                    {/* <Text numberOfLines={1} style={styles.displayName}>{ item?.type === "album" ? "Album" : "Playlist" } ∙ {formatArtistName({ names: item?.artists })}</Text> */}
                 </View>
             </TouchableOpacity>
         )

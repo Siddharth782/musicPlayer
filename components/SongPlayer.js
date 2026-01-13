@@ -4,7 +4,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import LinearGradient from 'react-native-linear-gradient';
 import { PlayerContext } from '../context/PlayerContext';
 import { COLORS } from '../constants/theme';
-import { DisplayArtistsName } from './DisplayArtistName'; // Assuming this is a component or helper
+import { formatArtistName } from './DisplayFunctions';
 import backupImg from '../assets/backupImg.jpg';
 const { width } = Dimensions.get('window');
 
@@ -30,7 +30,7 @@ const FullPlayer = React.memo(({ track, isLoading, isPlaying, onClose, onPlayPau
 
                 <View style={{ paddingHorizontal: 30, marginBottom: 20 }}>
                     <Text numberOfLines={2} style={styles.trackName}> {track?.name} </Text>
-                    <Text numberOfLines={1} style={styles.artistName}> {DisplayArtistsName({ names: track?.artists })} </Text>
+                    <Text numberOfLines={1} style={styles.artistName}> {formatArtistName({ names: track?.artists })} </Text>
                 </View>
 
                 <View style={styles.controlsContainer}>
@@ -72,7 +72,7 @@ const MiniPlayer = React.memo(({ track, isLoading, isPlaying, onExpand, onPlayPa
                         {track?.name}
                     </Text>
                     <Text numberOfLines={1} style={{ color: COLORS.gray, fontSize: 12 }}>
-                        {DisplayArtistsName({ names: track?.artists })}
+                        {formatArtistName({ names: track?.artists })}
                     </Text>
                 </View>
             </TouchableOpacity>
@@ -89,7 +89,7 @@ const MiniPlayer = React.memo(({ track, isLoading, isPlaying, onExpand, onPlayPa
 });
 
 const SongPlayer = () => {
-    const { currentTrack, isPlaying, togglePlayback, currentSound, isLoading, setIsPlayerVisible, isPlayerVisible, playlistName, playlist, setCurrentIndex, playTrack } = useContext(PlayerContext);
+    const { currentTrack, isPlaying, togglePlayback, isLoading, setIsPlayerVisible, isPlayerVisible, playlistName, playlist, setCurrentIndex, playTrack } = useContext(PlayerContext);
 
 
     const playNextTrack = useCallback(async (next) => {
