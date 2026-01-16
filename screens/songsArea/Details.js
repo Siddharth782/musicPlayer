@@ -41,7 +41,7 @@ const Details = (props) => {
     useEffect(() => {
         setOffset(0);
         setHasMore(true);
-        setTracks([]);
+        // setTracks([]);
 
         if (name === "Favorite") getTracks(`/me/tracks?limit=50`);
         if (type === "album") getTracks(`/albums/${id}/tracks`);
@@ -148,11 +148,17 @@ const Details = (props) => {
     const renderOptions = useCallback(() => {
         if (!selectedSong) return null;
         let item = selectedSong;
+        let imgSource = item?.album?.images?.[0]?.url ? item?.album?.images?.[0]?.url : item?.images?.[0].url;
+        if(!imgSource){
+            imgSource = playlistCover;
+        }else{
+            imgSource = {uri: imgSource};
+        }
 
         return (
             <View style={{ padding: 5, margin: 5, flex: 1 }}>
                 <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Image source={{ uri: (item?.album?.images?.[0]?.url ? item?.album?.images?.[0]?.url : item?.images?.[0].url) }} style={styles.displayImage} />
+                    <Image source={imgSource} style={styles.displayImage} />
                     <Text numberOfLines={1} style={styles.displaySongName}>{item?.name}</Text>
                     <Text numberOfLines={1} style={{ marginVertical: 3, ...FONTS.h4 }}>{formatArtistName({ names: item?.artists })}</Text>
                 </View>
@@ -164,7 +170,7 @@ const Details = (props) => {
                         <Text style={styles.optionsText}> Like </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.Options} onPress={() => props.navigation.navigate("AddtoPlaylist", { trackURI: item?.uri })}>
+                    <TouchableOpacity style={styles.Options} onPress={() => { props.navigation.navigate("AddtoPlaylist", { trackURI: item?.uri }), setModalVisible(false) }}>
                         <Icon name="playlist-music" size={20} color={COLORS.white} />
 
                         <Text style={styles.optionsText}> Add to Playlist </Text>
@@ -333,7 +339,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginLeft: 10,
+        marginLeft: 5,
         flex: 1,
     },
     descriptionText: {
@@ -385,9 +391,11 @@ const styles = StyleSheet.create({
         borderColor: COLORS.white
     },
     displayImage: {
-        height: 100,
-        width: 100,
-        margin: 5,
+        height: 64,
+        width: 64,
+        marginVertical: 5,
+        marginRight: 5,
+        marginLeft: 20,
         borderRadius: SIZES.radius
     },
     Options: {

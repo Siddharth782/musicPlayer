@@ -104,7 +104,7 @@ const Search = (props) => {
             return <DisplayData item={item} onTouch={handleClick} design={styles} />;
         }
         return null;
-    }, [ handleClick, currentTrack?.id]);
+    }, [handleClick, currentTrack?.id]);
 
     const ListEmptyComponent = useMemo(() => {
         if (loaderVisible) return <SkeletonSection layout={'Vertical'} />;
@@ -131,11 +131,17 @@ const Search = (props) => {
     const renderOptions = useCallback(() => {
         if (!selectedSong) return null;
         let item = selectedSong;
+        let imgSource = item?.album?.images?.[0]?.url ? item?.album?.images?.[0]?.url : item?.images?.[0].url;
+        if (!imgSource) {
+            imgSource = playlistCover;
+        } else {
+            imgSource = { uri: imgSource };
+        }
 
         return (
             <View style={{ padding: 5, margin: 5, flex: 1 }}>
                 <View style={{ justifyContent: 'center', alignItems: 'center' }}>
-                    <Image source={{ uri: (item?.album?.images?.[0]?.url ? item?.album?.images?.[0]?.url : item?.images?.[0]?.url) }} style={styles.displayOptionsImage} />
+                    <Image source={imgSource} style={styles.displayOptionsImage} />
                     <Text numberOfLines={1} style={styles.displaySongName}>{item?.name}</Text>
                     <Text numberOfLines={1} style={{ marginVertical: 3, ...FONTS.h4 }}>{formatArtistName({ names: item?.artists })}</Text>
                 </View>
@@ -147,7 +153,7 @@ const Search = (props) => {
                         <Text style={styles.optionsText}> Like </Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.Options} onPress={() => props.navigation.navigate("AddtoPlaylist", { trackURI: item?.uri })}>
+                    <TouchableOpacity style={styles.Options} onPress={() => { props.navigation.navigate("AddtoPlaylist", { trackURI: item?.uri }), setModalVisible(false) }}>
                         <Icon name="playlist-music" size={20} color={COLORS.white} />
 
                         <Text style={styles.optionsText}> Add to Playlist </Text>
