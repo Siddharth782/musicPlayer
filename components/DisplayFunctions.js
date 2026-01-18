@@ -22,7 +22,7 @@ export const MusicCard = memo(({ item, onPress, imageUrl, subText, styles }) => 
                 type: item?.type
             })}
         >
-            <View style={[styles.imageDisplay, { backgroundColor: COLORS.MidGreen }]}>
+            <View style={[styles.imageDisplay]}>
                 <Image
                     source={resolveImage(imageUrl)}
                     style={styles.imageDisplay}
