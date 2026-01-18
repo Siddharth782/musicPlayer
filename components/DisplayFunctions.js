@@ -7,7 +7,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons'
 
 const resolveImage = (url) => url ? { uri: url } : fallbackImage;
 
-const MusicCard = memo(({ item, onPress, imageUrl, subText, styles }) => {
+export const MusicCard = memo(({ item, onPress, imageUrl, subText, styles }) => {
     if (!item) return null;
 
     return (
@@ -30,58 +30,32 @@ const MusicCard = memo(({ item, onPress, imageUrl, subText, styles }) => {
                     fadeDuration={300}
                 />
             </View>
-            <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
-            <Text numberOfLines={2} style={styles.subText}>{subText}</Text>
+            <View>
+                <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
+                <Text numberOfLines={2} style={styles.subText}>{subText}</Text>
+            </View>
         </TouchableOpacity>
     )
 });
 
-export const DisplayNewMusic = memo(({ item, onPress, design }) => (
-    <MusicCard
-        item={item}
-        onPress={onPress}
-        imageUrl={item?.images?.[0]?.url}
-        subText={formatArtistName({ names: item?.artists })}
-        styles={design}
-    />
-));
-
-export const DisplayOtherPlaylists = memo(({ item, onPress, design }) => (
-    <MusicCard
-        item={item}
-        onPress={onPress}
-        imageUrl={item?.images?.[0]?.url}
-        subText={item?.description}
-        styles={design}
-    />
-));
-
-export const DisplayFavoriteTracks = memo(({ item, onPress, design }) => (
-    <MusicCard
-        item={item}
-        onPress={onPress}
-        imageUrl={item?.album?.images?.[0]?.url}
-        subText={formatArtistName({ names: item?.artists })}
-        styles={design}
-    />
-));
-
-export const DisplayArtist = memo(({ item, onPress, design }) => {
+export const DisplayArtist = memo(({ item, onPress, styles }) => {
     if (!item) return null;
     const imageUrl = item?.images?.[0]?.url;
 
     return (
         <TouchableOpacity
-            style={design.itemStyle}
+            style={styles.itemStyle}
             onPress={() => onPress({ id: item?.id, name: item?.name, coverImage: imageUrl, type: item?.type })}
         >
             <Image
                 source={resolveImage(imageUrl)}
-                style={design.artistImageDisplay}
+                style={styles.artistImageDisplay}
                 fadeDuration={300}
             />
-            <Text numberOfLines={1} style={design.displayName}>{item?.name}</Text>
-            <Text numberOfLines={1} style={{ color: COLORS.gray }}>Artist</Text>
+            <View>
+                <Text numberOfLines={1} style={styles.displayName}>{item?.name}</Text>
+                <Text numberOfLines={1} style={{ color: COLORS.gray }}>Artist</Text>
+            </View>
         </TouchableOpacity>
     );
 });

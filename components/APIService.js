@@ -21,8 +21,7 @@ export const fetchWithAuthRetry = async (endpoint, getConfig) => {
         if (!response.ok) throw new Error(`API Error: ${response.status}`);
         return await response.json();
     } catch (error) {
-        console.warn(`Fetch failed for ${endpoint}:`, error);
-        return null;
+        throw new Error(error);
     }
 };
 
